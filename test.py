@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 import time
-
+import wx.html
 import wx
-import math
-import random
 import os
 
 import sys
@@ -43,24 +41,6 @@ else:
     except:
         _hasAUI = False
 
-#----------------------------------------------------------------------
-
-#-------------------------------
-# Menu items IDs
-#-------------------------------
-
-# MENU_STYLE_DEFAULT = wx.NewId()
-# MENU_STYLE_XP = wx.NewId()
-# MENU_STYLE_2007 = wx.NewId()
-# MENU_STYLE_VISTA = wx.NewId()
-# MENU_STYLE_MY = wx.NewId()
-# MENU_USE_CUSTOM = wx.NewId()
-# MENU_LCD_MONITOR = wx.NewId()
-# MENU_HELP = wx.NewId()
-#
-# MENU_DISABLE_MENU_ITEM = wx.NewId()
-# MENU_REMOVE_MENU = wx.NewId()
-# MENU_TRANSPARENCY = wx.NewId()
 
 MENU_NEW_FILE = 10005
 MENU_SAVE = 10006
@@ -93,9 +73,6 @@ def CreateBackgroundBitmap():
     mem_dc.SelectObject(wx.NullBitmap)
     return bmp
 
-#------------------------------------------------------------
-# A custom renderer class for FlatMenu
-#------------------------------------------------------------
 
 class FM_MyRenderer(FM.FMRenderer):
     """ My custom style. """
@@ -227,14 +204,19 @@ class FlatMenuDemo(wx.Frame):
 
         if _hasAUI:
             # AUI support
-            self._mgr.AddPane(mainPanel, AuiPaneInfo().Name("main_panel").
+            self._mgr.AddPane(mainPanel, AuiPaneInfo().Name("main_panel").Top().
                               CenterPane())
 
             self._mgr.AddPane(minibarPanel, AuiPaneInfo().Name("minibar_panel").
                               Caption("Minibar Preview").Right().
-                              MinSize(wx.Size(150, 200)))
+                              MinSize(wx.Size(150, 100)))
+            self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().
+                              Name("thirdauto").Caption("A Third Auto-NB Pane").
+                              Bottom().MinimizeButton(True), target=self._mgr.GetPane("autonotebook"))
 
-
+            self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("test8").Caption("Tree Pane").
+                              Bottom().Right().CloseButton(True).MaximizeButton(True).
+                              MinimizeButton(True).MinSize(wx.Size(150, 100)))
             self._mb.PositionAUI(self._mgr)
             self._mgr.Update()
 
@@ -245,6 +227,16 @@ class FlatMenuDemo(wx.Frame):
         self._mtb.Refresh()
 
         self.CenterOnScreen()
+
+
+    def CreateHTMLCtrl(self, parent=None):
+
+        if not parent:
+            parent = self
+
+        ctrl = wx.html.HtmlWindow(parent, -1, wx.DefaultPosition, wx.Size(400, 300))
+        ctrl.SetPage(self.GetIntroText())
+        return ctrl
 
 
     def CreateMinibar(self, parent):
@@ -525,6 +517,80 @@ class FlatMenuDemo(wx.Frame):
             self.SetStatusText(st, 2)
         except:
             self.timer.Stop()
+
+    def GetIntroText(self):
+        text = \
+            "<html><body>" \
+            "<h3>Welcome to AUI</h3>" \
+            "<br/><b>Overview</b><br/>" \
+            "<p><ul>" \
+            "<li>Visual Studio 2005 style docking: <a href='http://www.kirix.com/forums/viewtopic.php?f=16&t=596'>" \
+            "http://www.kirix.com/forums/viewtopic.php?f=16&t=596</a></li>" \
+            "<li>Dock and Pane Resizing: <a href='http://www.kirix.com/forums/viewtopic.php?f=16&t=582'>" \
+            "http://www.kirix.com/forums/viewtopic.php?f=16&t=582</a></li> " \
+            "<li>Patch concerning dock resizing: <a href='http://www.kirix.com/forums/viewtopic.php?f=16&t=610'>" \
+            "http://www.kirix.com/forums/viewtopic.php?f=16&t=610</a></li> " \
+            "<li>Patch to effect wxAuiToolBar orientation switch: <a href='http://www.kirix.com/forums/viewtopic.php?f=16&t=641'>" \
+            "http://www.kirix.com/forums/viewtopic.php?f=16&t=641</a></li> " \
+            "<li>AUI: Core dump when loading a perspective in wxGTK (MSW OK): <a href='http://www.kirix.com/forums/viewtopic.php?f=15&t=627</li>'>" \
+            "http://www.kirix.com/forums/viewtopic.php?f=15&t=627</li></a>" \
+            "<li>wxAuiNotebook reordered AdvanceSelection(): <a href='http://www.kirix.com/forums/viewtopic.php?f=16&t=617'>" \
+            "http://www.kirix.com/forums/viewtopic.php?f=16&t=617</a></li> " \
+            "<li>Vertical Toolbar Docking Issue: <a href='http://www.kirix.com/forums/viewtopic.php?f=16&t=181'>" \
+            "http://www.kirix.com/forums/viewtopic.php?f=16&t=181</a></li> " \
+            "<li>Patch to show the resize hint on mouse-down in aui: <a href='http://trac.wxwidgets.org/ticket/9612'>" \
+            "http://trac.wxwidgets.org/ticket/9612</a></li> " \
+            "<li>The Left/Right and Top/Bottom Docks over draw each other: <a href='http://trac.wxwidgets.org/ticket/3516'>" \
+            "http://trac.wxwidgets.org/ticket/3516</a></li>" \
+            "<li>MinSize() not honoured: <a href='http://trac.wxwidgets.org/ticket/3562'>" \
+            "http://trac.wxwidgets.org/ticket/3562</a></li> " \
+            "<li>Layout problem with wxAUI: <a href='http://trac.wxwidgets.org/ticket/3597'>" \
+            "http://trac.wxwidgets.org/ticket/3597</a></li>" \
+            "<li>Resizing children ignores current window size: <a href='http://trac.wxwidgets.org/ticket/3908'>" \
+            "http://trac.wxwidgets.org/ticket/3908</a></li> " \
+            "<li>Resizing panes under Vista does not repaint background: <a href='http://trac.wxwidgets.org/ticket/4325'>" \
+            "http://trac.wxwidgets.org/ticket/4325</a></li> " \
+            "</ul>" \
+            "<p>Plus the following features:" \
+            "<p><ul>" \
+            "<li><b>AuiManager:</b></li>" \
+            "<ul>" \
+            "<li>Implementation of a simple minimize pane system: Clicking on this minimize button causes a new " \
+            "<i>AuiToolBar</i> to be created and added to the frame manager, (currently the implementation is such " \
+            "that panes at West will have a toolbar at the right, panes at South will have toolbars at the " \
+            "bottom etc...) and the pane is hidden in the manager. " \
+            "<li>Implementation of the <i>RequestUserAttention</i> method for panes;</li>" \
+            "<li>Ability to show the caption bar of docked panes on the left instead of on the top (with caption " \
+            "text rotated by 90 degrees then). This is similar to what <i>wxDockIt</i> did. To enable this feature on any " \
+            "given pane, simply call <i>CaptionVisible(True, left=True)</i>;</li>" \
+            "<li>New Aero-style docking guides: you can enable them by using the <i>AuiManager</i> style <tt>AUI_MGR_AERO_DOCKING_GUIDES</tt>;</li>" \
+            "<li>New Whidbey-style docking guides: you can enable them by using the <i>AuiManager</i> style <tt>AUI_MGR_WHIDBEY_DOCKING_GUIDES</tt>;</li>" \
+            "<li>A slide-in/slide-out preview of minimized panes can be seen by enabling the <i>AuiManager</i> style" \
+            "<tt>AUI_MGR_PREVIEW_MINIMIZED_PANES</tt> and by hovering with the mouse on the minimized pane toolbar tool;</li>" \
+            "<li>Native of custom-drawn mini frames can be used as floating panes, depending on the <tt>AUI_MGR_USE_NATIVE_MINIFRAMES</tt> style;</li>" \
+            "<li>A 'smooth docking effect' can be obtained by using the <tt>AUI_MGR_SMOOTH_DOCKING</tt> style (similar to PyQT docking style);</li>" \
+            '<li>Implementation of "Movable" panes, i.e. a pane that is set as `Movable()` but not `Floatable()` can be dragged and docked into a new location but will not form a floating window in between.</li>' \
+            "</ul><p>" \
+            "<li><b>AuiNotebook:</b></li>" \
+            "<ul>" \
+            "<li>Implementation of the style <tt>AUI_NB_HIDE_ON_SINGLE_TAB</tt>, a la <i>wx.lib.agw.flatnotebook</i>;</li>" \
+            "<li>Implementation of the style <tt>AUI_NB_SMART_TABS</tt>, a la <i>wx.lib.agw.flatnotebook</i>;</li>" \
+            "<li>Implementation of the style <tt>AUI_NB_USE_IMAGES_DROPDOWN</tt>, which allows to show tab images " \
+            "on the tab dropdown menu instead of bare check menu items (a la <i>wx.lib.agw.flatnotebook</i>);</li>" \
+            "<li>6 different tab arts are available, namely:</li>" \
+            "<ul>" \
+            "<li>Default 'glossy' theme (as in <i>wx.aui.AuiNotebook</i>)</li>" \
+            "<li>Simple theme (as in <i>wx.aui.AuiNotebook</i>)</li>" \
+            "<li>Firefox 2 theme</li>" \
+            "<li>Visual Studio 2003 theme (VC71)</li>" \
+            "<li>Visual Studio 2005 theme (VC81)</li>" \
+            "<li>Google Chrome theme</li>" \
+            "</ul>" \
+            "</ul><p>" \
+            "<p>" \
+            "</body></html>"
+
+        return text
 
 
 class MyApp(wx.App):
