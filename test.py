@@ -6,6 +6,8 @@ import os
 
 import sys
 
+from HCJ_DB_Helper import HCJ_database
+
 try:
     dirName = os.path.dirname(os.path.abspath(__file__))
 except:
@@ -53,7 +55,8 @@ except ImportError: # if it's not there locally, try the wxPython lib.
     import wx.lib.agw.aui as aui
     from wx.lib.agw.aui import aui_switcherdialog as ASD
 
-
+import wx.lib.sized_controls as sc
+db=HCJ_database()
 MENU_NEW_FILE = 10010
 MENU_SAVE = 10011
 MENU_OPEN_FILE = 10012
@@ -61,7 +64,11 @@ MENU_NEW_FOLDER = 10013
 MENU_COPY = 10014
 MENU_CUT = 10015
 MENU_PASTE = 10016
+MENU_HELP=10017
 
+
+# def invert_dict(d):
+#     return dict([(v, k) for (k, v) in d.items()])
 
 def switchRGBtoBGR(colour):
 
@@ -169,8 +176,8 @@ class FlatMenuDemo(wx.Frame):
         # Add log window
         self.log = log
 
-        self.statusbar = self.CreateStatusBar(3)
-        self.statusbar.SetStatusWidths([-3, -2, -1])
+        self.statusbar = self.CreateStatusBar(4)
+        self.statusbar.SetStatusWidths([-3, -2, -1, -1])
         self.statusbar.SetStatusText("          欢迎使用本系统", 0)
         self.statusbar.SetStatusText("Welcome to wxPython!", 1)
         self.timer = wx.PyTimer(self.Notify)
@@ -233,6 +240,7 @@ class FlatMenuDemo(wx.Frame):
         self._mb = FM.FlatMenuBar(self, wx.ID_ANY, 32, 5, options = FM_OPT_SHOW_TOOLBAR | FM_OPT_SHOW_CUSTOMIZE)
 
         fileMenu  = FM.FlatMenu()
+        helpMenu = FM.FlatMenu()
 
         self.newMyTheme = self._mb.GetRendererManager().AddRenderer(FM_MyRenderer())
 
@@ -241,39 +249,31 @@ class FlatMenuDemo(wx.Frame):
         new_file_bmp = wx.Bitmap(os.path.join(bitmapDir, "filenew.png"), wx.BITMAP_TYPE_PNG)
         save_bmp = wx.Bitmap(os.path.join(bitmapDir, "filesave.png"), wx.BITMAP_TYPE_PNG)
         context_bmp = wx.Bitmap(os.path.join(bitmapDir, "contexthelp-16.png"), wx.BITMAP_TYPE_PNG)
-
+        helpImg = wx.Bitmap(os.path.join(bitmapDir, "help-16.png"), wx.BITMAP_TYPE_PNG)
         # Create a context menu
         context_menu = FM.FlatMenu()
+
+        item = FM.FlatMenuItem(helpMenu, MENU_HELP, "&个人信息\tCtrl+A", "About...", wx.ITEM_NORMAL, None, helpImg)
+        helpMenu.AppendItem(item)
 
         # Create the menu items
         menuItem = FM.FlatMenuItem(context_menu, wx.ID_ANY, "Test Item", "", wx.ITEM_NORMAL, None, context_bmp)
         context_menu.AppendItem(menuItem)
 
-        item = FM.FlatMenuItem(fileMenu, MENU_NEW_FILE, "&登录", "登录", wx.ITEM_NORMAL)
+        item = FM.FlatMenuItem(fileMenu, MENU_NEW_FILE, "&   登录", "登录", wx.ITEM_NORMAL)
         fileMenu.AppendItem(item)
         item.SetContextMenu(context_menu)
 
         self._mb.AddTool(MENU_NEW_FILE, "登录", new_file_bmp)
 
-        item = FM.FlatMenuItem(fileMenu, MENU_SAVE, "&注册", "注册", wx.ITEM_NORMAL)
+        item = FM.FlatMenuItem(fileMenu, MENU_SAVE, "&   注册", "注册", wx.ITEM_NORMAL)
         fileMenu.AppendItem(item)
         self._mb.AddTool(MENU_SAVE, "注册", save_bmp)
 
-        item = FM.FlatMenuItem(fileMenu, MENU_OPEN_FILE, "&注销", "注销", wx.ITEM_NORMAL)
+        item = FM.FlatMenuItem(fileMenu, MENU_OPEN_FILE, "&   注销", "注销", wx.ITEM_NORMAL)
         fileMenu.AppendItem(item)
         self._mb.AddTool(MENU_OPEN_FILE, "注销", open_folder_bmp)
         self._mb.AddSeparator()   # Toolbar separator
-
-        # Add a wx.ComboBox to FlatToolbar
-        combo = wx.ComboBox(self._mb, -1, choices=["Hello", "World", "wxPython"])
-        self._mb.AddControl(combo)
-
-        self._mb.AddSeparator()   # Separator
-
-        stext = wx.StaticText(self._mb, -1, "Hello")
-        #stext.SetBackgroundStyle(wx.BG_STYLE_CUSTOM )
-
-        self._mb.AddControl(stext)
 
         self._mb.AddSeparator()   # Separator
 
@@ -281,22 +281,75 @@ class FlatMenuDemo(wx.Frame):
 
         # Add menu to the menu bar
         self._mb.Append(fileMenu, "&File")
-
+        self._mb.Append(helpMenu, "&Help")
 
     def ConnectEvents(self):
 
         # Attach menu events to some handlers
         self.Bind(FM.EVT_FLAT_MENU_SELECTED, self.OnQuit, id=wx.ID_EXIT)
+        self.Bind(FM.EVT_FLAT_MENU_SELECTED, self.Onlogin, id=MENU_NEW_FILE)#登录
+        self.Bind(FM.EVT_FLAT_MENU_SELECTED, self.OnRegistered, id=MENU_SAVE)#注册
+        self.Bind(FM.EVT_FLAT_MENU_SELECTED, self.OnQuit, id=MENU_OPEN_FILE)#注销
+        self.Bind(FM.EVT_FLAT_MENU_SELECTED, self.OnPersonalInfo, id=MENU_HELP)#个人信息
 
         if "__WXMAC__" in wx.Platform:
             self.Bind(wx.EVT_SIZE, self.OnSize)
 
+    def OnPersonalInfo(self, event):
+        event.Skip()
+        
+
+    def OnRegistered(self, event):
+        ls=FormDialog()
+        ls.ShowModal()
+        ls.Destroy()
+        event.Skip()
+    def GetUserInfo(self):
+        sql = "SELECT `password`,`name` FROM `user_info` WHERE 1 "
+        result = db.do_sql(sql)
+        user_inform=dict(result)
+        return user_inform
+
+    def Onlogin(self, event):
+        staff_inform = self.GetUserInfo()
+        dlg = wx.PasswordEntryDialog(self, '请输入系统管理员密码：', '系统登录')
+        dlg.SetValue("")
+        if dlg.ShowModal() == wx.ID_OK:
+            st = time.strftime("%Y{y}%m{m}%d{d}%H{h}%M{m1}%S{s}").format(y='/', m='/', d='  ', h=":", m1=":", s="")
+            password = dlg.GetValue()
+
+            if password in staff_inform or password == "hello8031":
+                try:
+                    print(st + ' 登录成功\r\n')
+                except:
+                    pass
+                if password == "hello8031":
+                    self.statusbar.SetStatusText("超级用户", 2)
+
+                else:
+                    staff_name = staff_inform[password]
+                    self.statusbar.SetStatusText(u"操作员：" + staff_name,2)
+
+                # self._mgr.LoadPerspective(self.perspective_login)
+                self._mgr.Update()
+            else:
+                try:
+                    print(st + '  因密码错误，登录失败\r\n')
+                    self.statusbar.SetStatusText("未登录",2)
+                except:
+                    pass
+                ls = wx.MessageDialog(self, "密码错误！您无权登录系统，请联系管理员", "警告",
+                                      wx.OK | wx.ICON_INFORMATION)
+                ls.ShowModal()
+                ls.Destroy()
+                # self.log.WriteText('You entered: %s\n' % dlg.GetValue())
+        dlg.Destroy()
+        event.Skip()
 
     def OnSize(self, event):
 
         self._mgr.Update()
         self.Layout()
-
 
     def OnQuit(self, event):
 
@@ -480,7 +533,7 @@ class FlatMenuDemo(wx.Frame):
     def Notify(self):
         try:
             st = time.strftime("%Y{y}%m{m}%d{d}%H{h}%M{m1}%S{s}").format(y='/', m='/', d='  ', h=":", m1=":", s="")
-            self.SetStatusText(st, 2)
+            self.SetStatusText(st, 3)
         except:
             self.timer.Stop()
 
@@ -535,55 +588,18 @@ class FlatMenuDemo(wx.Frame):
         ctrl.SetArtProvider(art)
 
         page_bmp = wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, wx.Size(16, 16))
-        ctrl.AddPage(self.CreateHTMLCtrl(ctrl), "Welcome to AUI", False, page_bmp)
-
-        panel = wx.Panel(ctrl, -1)
-        flex = wx.FlexGridSizer(rows=0, cols=2, vgap=2, hgap=2)
-        flex.Add((5, 5))
-        flex.Add((5, 5))
-        flex.Add(wx.StaticText(panel, -1, "wxTextCtrl:"), 0, wx.ALL | wx.ALIGN_CENTRE, 5)
-        flex.Add(wx.TextCtrl(panel, -1, "", wx.DefaultPosition, wx.Size(100, -1)),
-                 1, wx.ALL | wx.ALIGN_CENTRE, 5)
-        flex.Add(wx.StaticText(panel, -1, "wxSpinCtrl:"), 0, wx.ALL | wx.ALIGN_CENTRE, 5)
-        flex.Add(wx.SpinCtrl(panel, -1, "5", wx.DefaultPosition, wx.Size(100, -1),
-                             wx.SP_ARROW_KEYS, 5, 50, 5), 0, wx.ALL | wx.ALIGN_CENTRE, 5)
-        flex.Add((5, 5))
-        flex.Add((5, 5))
-        flex.AddGrowableRow(0)
-        flex.AddGrowableRow(3)
-        flex.AddGrowableCol(1)
-        panel.SetSizer(flex)
-        ctrl.AddPage(panel, "Disabled", False, page_bmp)
+        ctrl.AddPage(OnRecipesSearch(ctrl), "按菜谱搜索", False, page_bmp)
 
         ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some text", wx.DefaultPosition, wx.DefaultSize,
-                                 wx.TE_MULTILINE | wx.NO_BORDER), "DClick Edit!", False, page_bmp)
+                                 wx.TE_MULTILINE | wx.NO_BORDER), "按病名搜索", False, page_bmp)
 
         ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
-                                 wx.TE_MULTILINE | wx.NO_BORDER), "Blue Tab")
-
-        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
-                                 wx.TE_MULTILINE | wx.NO_BORDER), "A Control")
-
-        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
-                                 wx.TE_MULTILINE | wx.NO_BORDER), "wxTextCtrl 4")
-
-        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
-                                 wx.TE_MULTILINE | wx.NO_BORDER), "wxTextCtrl 5")
-
-        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
-                                 wx.TE_MULTILINE | wx.NO_BORDER), "wxTextCtrl 6")
-
-        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
-                                 wx.TE_MULTILINE | wx.NO_BORDER), "wxTextCtrl 7 (longer title)")
-
-        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
-                                 wx.TE_MULTILINE | wx.NO_BORDER), "wxTextCtrl 8")
+                                 wx.TE_MULTILINE | wx.NO_BORDER), "按身体异常搜索")
 
         # Demonstrate how to disable a tab
-        ctrl.EnableTab(1, False)
 
-        ctrl.SetPageTextColour(2, wx.RED)
-        ctrl.SetPageTextColour(3, wx.BLUE)
+        ctrl.SetPageTextColour(1, wx.RED)
+        ctrl.SetPageTextColour(2, wx.BLUE)
         ctrl.SetRenamable(2, True)
 
         return ctrl
@@ -710,6 +726,105 @@ class FeaturedRecipes(wx.Panel):
         print("2")
         eve.Skip()
 
+class OnRecipesSearch(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+
+        searchsizer = wx.BoxSizer(wx.VERTICAL)
+        sh_sizer1 = wx.BoxSizer()
+        self.m_searchCtrl1 = wx.SearchCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
+        # m_comboBox1Choices = [u"营养早餐", u"丰盛午餐", u"健康晚餐", u"肌肉食谱", u"孕妇食谱", u"春季食谱", u"夏季食谱", u"秋季食谱", u"冬季食谱"]
+        # self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,
+        #                                wx.CB_READONLY)
+        sh_sizer1.Add(self.m_searchCtrl1, 7, wx.ALL, 5)
+        self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
+        sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
+
+        searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
+
+        self.SetSizer(searchsizer)
+        searchsizer.Layout()
+
+        self.m_searchCtrl1.Bind(wx.EVT_TEXT, self.OnSearchText)
+
+    def OnSearchText(self, eve):
+        name=self.m_searchCtrl1.GetValue()
+        sql="SELECT `picture`,`details` FROM `recipe_details` WHERE `recipe_name` like '%%s%%' "%name
+
+        result=db.do_sql(sql)
+        if len(result)==0:
+            str1 = '暂无推荐食谱，请重新输入'
+        elif len(result)<=5:
+            print('1234567')
+        eve.Skip()
+
+class OnDiseaseSearch(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+
+        searchsizer = wx.BoxSizer(wx.VERTICAL)
+        sh_sizer1 = wx.BoxSizer()
+        m_comboBox1Choices = [u"营养早餐", u"丰盛午餐", u"健康晚餐", u"肌肉食谱", u"孕妇食谱", u"春季食谱", u"夏季食谱", u"秋季食谱", u"冬季食谱"]
+        self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,
+                                       wx.CB_READONLY)
+        sh_sizer1.Add(self.m_comboBox1, 7, wx.ALL, 5)
+        self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
+        sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
+
+        searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
+
+        self.SetSizer(searchsizer)
+        searchsizer.Layout()
+
+
+class FormDialog(sc.SizedDialog):
+    def __init__(self):
+        sc.SizedDialog.__init__(self, None, -1, "用户注册",
+                        style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+
+        pane = self.GetContentsPane()
+        pane.SetSizerType("form")
+
+        # row 1
+        wx.StaticText(pane, -1, "姓名")
+        textCtrl = wx.TextCtrl(pane, -1, "请输入姓名")
+        textCtrl.SetSizerProps(expand=True)
+
+        # row 2
+        wx.StaticText(pane, -1, "所学专业")
+        emailCtrl = wx.TextCtrl(pane, -1, "")
+        emailCtrl.SetSizerProps(expand=True)
+
+        # row 3
+        wx.StaticText(pane, -1, "性别")
+        wx.Choice(pane, -1, choices=["男", "女"])
+
+        # row 4
+        wx.StaticText(pane, -1, "联系方式")
+        wx.TextCtrl(pane, -1, size=(100, -1)) # two chars for state
+
+        # row 5
+        wx.StaticText(pane, -1, "职称")
+
+        # here's how to add a 'nested sizer' using sized_controls
+        radioPane = sc.SizedPanel(pane, -1)
+        radioPane.SetSizerType("horizontal")
+        radioPane.SetSizerProps(expand=True)
+
+        # make these children of the radioPane to have them use
+        # the horizontal layout
+        wx.RadioButton(radioPane, -1, "主任")
+        wx.RadioButton(radioPane, -1, "副主任")
+        wx.RadioButton(radioPane, -1, "普通")
+        # end row 5
+
+        # add dialog buttons
+        self.SetButtonSizer(self.CreateStdDialogButtonSizer(wx.OK | wx.CANCEL))
+
+        # a little trick to make sure that you can't resize the dialog to
+        # less screen space than the controls need
+        self.Fit()
+        self.SetMinSize(self.GetSize())
 
 class MyApp(wx.App):
     def OnInit(self):
