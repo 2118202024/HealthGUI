@@ -27,6 +27,11 @@ except ImportError: # if it's not there locally, try the wxPython lib.
 
 import images
 
+try:
+    from agw import aquabutton as AB
+except ImportError: # if it's not there locally, try the wxPython lib.
+    import wx.lib.agw.aquabutton as AB
+
 if wx.VERSION >= (2,7,0,0):
     import wx.lib.agw.aui as AUI
     AuiPaneInfo = AUI.AuiPaneInfo
@@ -41,14 +46,21 @@ else:
     except:
         _hasAUI = False
 
+try:
+    from agw import aui
+    from agw.aui import aui_switcherdialog as ASD
+except ImportError: # if it's not there locally, try the wxPython lib.
+    import wx.lib.agw.aui as aui
+    from wx.lib.agw.aui import aui_switcherdialog as ASD
 
-MENU_NEW_FILE = 10005
-MENU_SAVE = 10006
-MENU_OPEN_FILE = 10007
-MENU_NEW_FOLDER = 10008
-MENU_COPY = 10009
-MENU_CUT = 10010
-MENU_PASTE = 10011
+
+MENU_NEW_FILE = 10010
+MENU_SAVE = 10011
+MENU_OPEN_FILE = 10012
+MENU_NEW_FOLDER = 10013
+MENU_COPY = 10014
+MENU_CUT = 10015
+MENU_PASTE = 10016
 
 
 def switchRGBtoBGR(colour):
@@ -154,38 +166,8 @@ class FlatMenuDemo(wx.Frame):
 
         self._popUpMenu = None
 
-        mainSizer = wx.BoxSizer(wx.VERTICAL)
-
-        # Create a main panel and place some controls on it
-        mainPanel = wx.Panel(self, wx.ID_ANY)
-
-        panelSizer = wx.BoxSizer(wx.VERTICAL)
-        mainPanel.SetSizer(panelSizer)
-
-        # Create minibar Preview Panel
-        minibarPanel= wx.Panel(self, wx.ID_ANY)
-        self.CreateMinibar(minibarPanel)
-        miniSizer = wx.BoxSizer(wx.VERTICAL)
-        miniSizer.Add(self._mtb, 0, wx.EXPAND)
-        minibarPanel.SetSizer(miniSizer)
-
         # Add log window
         self.log = log
-
-        # hs = wx.BoxSizer(wx.HORIZONTAL)
-        # btn = wx.Button(mainPanel, wx.ID_ANY, "Press me for pop up menu!")
-        # hs.Add(btn, 0, wx.ALL, 5)
-
-        # Connect a button
-        # btn.Bind(wx.EVT_BUTTON, self.OnButtonClicked)
-        #
-        # btn = wx.Button(mainPanel, wx.ID_ANY, "Press me for a long menu!")
-        # hs.Add(btn, 0, wx.ALL, 5)
-        #
-        # panelSizer.Add(hs, 0, wx.ALL, 5)
-
-        # Connect a button
-        # btn.Bind(wx.EVT_BUTTON, self.OnLongButtonClicked)
 
         self.statusbar = self.CreateStatusBar(3)
         self.statusbar.SetStatusWidths([-3, -2, -1])
@@ -197,26 +179,32 @@ class FlatMenuDemo(wx.Frame):
         self.CreateMenu()
         self.ConnectEvents()
 
-        mainSizer.Add(self._mb, 0, wx.EXPAND)
-        mainSizer.Add(mainPanel, 1, wx.EXPAND)
-        self.SetSizer(mainSizer)
-        mainSizer.Layout()
+        #
+        self._notebook_style = aui.AUI_NB_DEFAULT_STYLE | wx.NO_BORDER
+        self._notebook_style &= ~(aui.AUI_NB_CLOSE_BUTTON |
+                                  aui.AUI_NB_CLOSE_ON_ACTIVE_TAB |
+                                  aui.AUI_NB_CLOSE_ON_ALL_TABS |
+                                  aui.AUI_NB_TAB_MOVE |
+                                  aui.AUI_NB_TAB_EXTERNAL_MOVE)
+        self._notebook_theme = 5
 
         if _hasAUI:
             # AUI support
-            self._mgr.AddPane(mainPanel, AuiPaneInfo().Name("main_panel").Top().
+            self._mgr.AddPane(self.CreateNotebook(), AuiPaneInfo().Name("main_panel").Top().
                               CenterPane())
 
-            self._mgr.AddPane(minibarPanel, AuiPaneInfo().Name("minibar_panel").
-                              Caption("Minibar Preview").Right().
-                              MinSize(wx.Size(150, 100)))
-            self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().
-                              Name("thirdauto").Caption("A Third Auto-NB Pane").
-                              Bottom().MinimizeButton(True), target=self._mgr.GetPane("autonotebook"))
+            self._mgr.AddPane(DoctorPanel(self), AuiPaneInfo().Name("医师信息").
+                              Caption("医师信息").Right().
+                              MinSize(wx.Size(300, 100)))
 
-            self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("test8").Caption("Tree Pane").
+            self._mgr.AddPane(FeaturedRecipes(self), AuiPaneInfo().
+                              Name("thirdauto").Caption("特色食谱").
+                              Bottom().MinimizeButton(True).MinSize(wx.Size(800, 250)), target=self._mgr.GetPane("autonotebook"))
+
+            self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("test8").Caption("更多健康食谱文章").
                               Bottom().Right().CloseButton(True).MaximizeButton(True).
-                              MinimizeButton(True).MinSize(wx.Size(150, 100)))
+                              MinimizeButton(True).MinSize(wx.Size(300, 100)))
+
             self._mb.PositionAUI(self._mgr)
             self._mgr.Update()
 
@@ -224,7 +212,7 @@ class FlatMenuDemo(wx.Frame):
         ArtManager.Get().SetRaiseToolbar(False)
 
         self._mb.Refresh()
-        self._mtb.Refresh()
+        # self._mtb.Refresh()
 
         self.CenterOnScreen()
 
@@ -237,25 +225,6 @@ class FlatMenuDemo(wx.Frame):
         ctrl = wx.html.HtmlWindow(parent, -1, wx.DefaultPosition, wx.Size(400, 300))
         ctrl.SetPage(self.GetIntroText())
         return ctrl
-
-
-    def CreateMinibar(self, parent):
-        # create mini toolbar
-        self._mtb = FM.FlatMenuBar(parent, wx.ID_ANY, 16, 6, options = FM_OPT_SHOW_TOOLBAR|FM_OPT_MINIBAR)
-
-        checkCancelBmp = wx.Bitmap(os.path.join(bitmapDir, "ok-16.png"), wx.BITMAP_TYPE_PNG)
-        viewMagBmp = wx.Bitmap(os.path.join(bitmapDir, "viewmag-16.png"), wx.BITMAP_TYPE_PNG)
-        viewMagFitBmp = wx.Bitmap(os.path.join(bitmapDir, "viewmagfit-16.png"), wx.BITMAP_TYPE_PNG)
-        viewMagZoomBmp = wx.Bitmap(os.path.join(bitmapDir, "viewmag-p-16.png"), wx.BITMAP_TYPE_PNG)
-        viewMagZoomOutBmp = wx.Bitmap(os.path.join(bitmapDir, "viewmag-m-16.png"), wx.BITMAP_TYPE_PNG)
-
-        self._mtb.AddCheckTool(wx.ID_ANY, "Check Settings Item", checkCancelBmp)
-        self._mtb.AddCheckTool(wx.ID_ANY, "Check Info Item", checkCancelBmp)
-        self._mtb.AddSeparator()
-        self._mtb.AddRadioTool(wx.ID_ANY, "Magnifier", viewMagBmp)
-        self._mtb.AddRadioTool(wx.ID_ANY, "Fit", viewMagFitBmp)
-        self._mtb.AddRadioTool(wx.ID_ANY, "Zoom In", viewMagZoomBmp)
-        self._mtb.AddRadioTool(wx.ID_ANY, "Zoom Out", viewMagZoomOutBmp)
 
 
     def CreateMenu(self):
@@ -318,8 +287,6 @@ class FlatMenuDemo(wx.Frame):
 
         # Attach menu events to some handlers
         self.Bind(FM.EVT_FLAT_MENU_SELECTED, self.OnQuit, id=wx.ID_EXIT)
-
-
 
         if "__WXMAC__" in wx.Platform:
             self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -484,7 +451,6 @@ class FlatMenuDemo(wx.Frame):
 
         ArtManager.Get().SetTransparency(value)
 
-
     def GetStringFromUser(self, msg):
 
         dlg = wx.TextEntryDialog(self, msg, "Enter Text")
@@ -521,8 +487,6 @@ class FlatMenuDemo(wx.Frame):
     def GetIntroText(self):
         text = \
             "<html><body>" \
-            "<h3>Welcome to AUI</h3>" \
-            "<br/><b>Overview</b><br/>" \
             "<p><ul>" \
             "<li>Visual Studio 2005 style docking: <a href='http://www.kirix.com/forums/viewtopic.php?f=16&t=596'>" \
             "http://www.kirix.com/forums/viewtopic.php?f=16&t=596</a></li>" \
@@ -551,46 +515,200 @@ class FlatMenuDemo(wx.Frame):
             "<li>Resizing panes under Vista does not repaint background: <a href='http://trac.wxwidgets.org/ticket/4325'>" \
             "http://trac.wxwidgets.org/ticket/4325</a></li> " \
             "</ul>" \
-            "<p>Plus the following features:" \
-            "<p><ul>" \
-            "<li><b>AuiManager:</b></li>" \
-            "<ul>" \
-            "<li>Implementation of a simple minimize pane system: Clicking on this minimize button causes a new " \
-            "<i>AuiToolBar</i> to be created and added to the frame manager, (currently the implementation is such " \
-            "that panes at West will have a toolbar at the right, panes at South will have toolbars at the " \
-            "bottom etc...) and the pane is hidden in the manager. " \
-            "<li>Implementation of the <i>RequestUserAttention</i> method for panes;</li>" \
-            "<li>Ability to show the caption bar of docked panes on the left instead of on the top (with caption " \
-            "text rotated by 90 degrees then). This is similar to what <i>wxDockIt</i> did. To enable this feature on any " \
-            "given pane, simply call <i>CaptionVisible(True, left=True)</i>;</li>" \
-            "<li>New Aero-style docking guides: you can enable them by using the <i>AuiManager</i> style <tt>AUI_MGR_AERO_DOCKING_GUIDES</tt>;</li>" \
-            "<li>New Whidbey-style docking guides: you can enable them by using the <i>AuiManager</i> style <tt>AUI_MGR_WHIDBEY_DOCKING_GUIDES</tt>;</li>" \
-            "<li>A slide-in/slide-out preview of minimized panes can be seen by enabling the <i>AuiManager</i> style" \
-            "<tt>AUI_MGR_PREVIEW_MINIMIZED_PANES</tt> and by hovering with the mouse on the minimized pane toolbar tool;</li>" \
-            "<li>Native of custom-drawn mini frames can be used as floating panes, depending on the <tt>AUI_MGR_USE_NATIVE_MINIFRAMES</tt> style;</li>" \
-            "<li>A 'smooth docking effect' can be obtained by using the <tt>AUI_MGR_SMOOTH_DOCKING</tt> style (similar to PyQT docking style);</li>" \
-            '<li>Implementation of "Movable" panes, i.e. a pane that is set as `Movable()` but not `Floatable()` can be dragged and docked into a new location but will not form a floating window in between.</li>' \
-            "</ul><p>" \
-            "<li><b>AuiNotebook:</b></li>" \
-            "<ul>" \
-            "<li>Implementation of the style <tt>AUI_NB_HIDE_ON_SINGLE_TAB</tt>, a la <i>wx.lib.agw.flatnotebook</i>;</li>" \
-            "<li>Implementation of the style <tt>AUI_NB_SMART_TABS</tt>, a la <i>wx.lib.agw.flatnotebook</i>;</li>" \
-            "<li>Implementation of the style <tt>AUI_NB_USE_IMAGES_DROPDOWN</tt>, which allows to show tab images " \
-            "on the tab dropdown menu instead of bare check menu items (a la <i>wx.lib.agw.flatnotebook</i>);</li>" \
-            "<li>6 different tab arts are available, namely:</li>" \
-            "<ul>" \
-            "<li>Default 'glossy' theme (as in <i>wx.aui.AuiNotebook</i>)</li>" \
-            "<li>Simple theme (as in <i>wx.aui.AuiNotebook</i>)</li>" \
-            "<li>Firefox 2 theme</li>" \
-            "<li>Visual Studio 2003 theme (VC71)</li>" \
-            "<li>Visual Studio 2005 theme (VC81)</li>" \
-            "<li>Google Chrome theme</li>" \
-            "</ul>" \
             "</ul><p>" \
             "<p>" \
             "</body></html>"
 
         return text
+
+    def CreateNotebook(self):
+
+        # create the notebook off-window to avoid flicker
+        client_size = self.GetClientSize()
+        ctrl = aui.AuiNotebook(self, -1, wx.Point(client_size.x, client_size.y),
+                               wx.Size(430, 200), agwStyle=self._notebook_style)
+
+        arts = [aui.AuiDefaultTabArt, aui.AuiSimpleTabArt, aui.VC71TabArt, aui.FF2TabArt,
+                aui.VC8TabArt, aui.ChromeTabArt]
+
+        art = arts[self._notebook_theme]()
+        ctrl.SetArtProvider(art)
+
+        page_bmp = wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, wx.Size(16, 16))
+        ctrl.AddPage(self.CreateHTMLCtrl(ctrl), "Welcome to AUI", False, page_bmp)
+
+        panel = wx.Panel(ctrl, -1)
+        flex = wx.FlexGridSizer(rows=0, cols=2, vgap=2, hgap=2)
+        flex.Add((5, 5))
+        flex.Add((5, 5))
+        flex.Add(wx.StaticText(panel, -1, "wxTextCtrl:"), 0, wx.ALL | wx.ALIGN_CENTRE, 5)
+        flex.Add(wx.TextCtrl(panel, -1, "", wx.DefaultPosition, wx.Size(100, -1)),
+                 1, wx.ALL | wx.ALIGN_CENTRE, 5)
+        flex.Add(wx.StaticText(panel, -1, "wxSpinCtrl:"), 0, wx.ALL | wx.ALIGN_CENTRE, 5)
+        flex.Add(wx.SpinCtrl(panel, -1, "5", wx.DefaultPosition, wx.Size(100, -1),
+                             wx.SP_ARROW_KEYS, 5, 50, 5), 0, wx.ALL | wx.ALIGN_CENTRE, 5)
+        flex.Add((5, 5))
+        flex.Add((5, 5))
+        flex.AddGrowableRow(0)
+        flex.AddGrowableRow(3)
+        flex.AddGrowableCol(1)
+        panel.SetSizer(flex)
+        ctrl.AddPage(panel, "Disabled", False, page_bmp)
+
+        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some text", wx.DefaultPosition, wx.DefaultSize,
+                                 wx.TE_MULTILINE | wx.NO_BORDER), "DClick Edit!", False, page_bmp)
+
+        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
+                                 wx.TE_MULTILINE | wx.NO_BORDER), "Blue Tab")
+
+        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
+                                 wx.TE_MULTILINE | wx.NO_BORDER), "A Control")
+
+        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
+                                 wx.TE_MULTILINE | wx.NO_BORDER), "wxTextCtrl 4")
+
+        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
+                                 wx.TE_MULTILINE | wx.NO_BORDER), "wxTextCtrl 5")
+
+        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
+                                 wx.TE_MULTILINE | wx.NO_BORDER), "wxTextCtrl 6")
+
+        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
+                                 wx.TE_MULTILINE | wx.NO_BORDER), "wxTextCtrl 7 (longer title)")
+
+        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
+                                 wx.TE_MULTILINE | wx.NO_BORDER), "wxTextCtrl 8")
+
+        # Demonstrate how to disable a tab
+        ctrl.EnableTab(1, False)
+
+        ctrl.SetPageTextColour(2, wx.RED)
+        ctrl.SetPageTextColour(3, wx.BLUE)
+        ctrl.SetRenamable(2, True)
+
+        return ctrl
+
+class DoctorPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+
+        docsizer = wx.BoxSizer(wx.VERTICAL)
+        h_sizer1=wx.BoxSizer()
+        self.d_name1 = wx.TextCtrl(self,wx.ID_ANY, '刘丹', wx.DefaultPosition, wx.Size( 60,20 ), wx.TE_READONLY)
+        h_sizer1.Add(self.d_name1, 0, wx.EXPAND | wx.ALL, 3)
+        major = wx.TextCtrl(self,wx.ID_ANY, '中药学', wx.DefaultPosition, wx.Size( 60,20 ), wx.TE_READONLY)
+        h_sizer1.Add(major, 0, wx.EXPAND | wx.ALL, 3)
+        t_gender = wx.TextCtrl(self,wx.ID_ANY, '女', wx.DefaultPosition, wx.Size( 35,20 ), wx.TE_READONLY)
+        h_sizer1.Add(t_gender, 0, wx.EXPAND | wx.ALL, 3)
+        self.c_btn1 = wx.Button(self, 10001, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
+        h_sizer1.Add(self.c_btn1, 0, wx.EXPAND | wx.ALL, 2)
+        docsizer.Add(h_sizer1, 0, wx.EXPAND | wx.ALL, 3)
+        #---
+        h_sizer2 = wx.BoxSizer()
+        self.d_name2 = wx.TextCtrl(self, wx.ID_ANY,'王辉', wx.DefaultPosition, wx.Size(60, 20),
+                                   wx.TE_READONLY)
+        h_sizer2.Add(self.d_name2, 0, wx.EXPAND | wx.ALL, 3)
+        major = wx.TextCtrl(self, wx.ID_ANY, '中药学', wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
+        h_sizer2.Add(major, 0, wx.EXPAND | wx.ALL, 3)
+        t_gender = wx.TextCtrl(self, wx.ID_ANY, '男', wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
+        h_sizer2.Add(t_gender, 0, wx.EXPAND | wx.ALL, 3)
+        self.c_btn2 = wx.Button(self, 10002, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
+        h_sizer2.Add(self.c_btn2, 0, wx.EXPAND | wx.ALL, 2)
+        docsizer.Add(h_sizer2, 0, wx.EXPAND | wx.ALL, 3)
+        #------
+        h_sizer3 = wx.BoxSizer()
+        self.d_name3 = wx.TextCtrl(self, wx.ID_ANY, '赵文斌', wx.DefaultPosition, wx.Size(60, 20),
+                                   wx.TE_READONLY)
+        h_sizer3.Add(self.d_name3, 0, wx.EXPAND | wx.ALL, 3)
+        major = wx.TextCtrl(self, wx.ID_ANY, '中药学', wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
+        h_sizer3.Add(major, 0, wx.EXPAND | wx.ALL, 3)
+        t_gender = wx.TextCtrl(self, wx.ID_ANY, '男', wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
+        h_sizer3.Add(t_gender, 0, wx.EXPAND | wx.ALL, 3)
+        self.c_btn3 = wx.Button(self, 10003, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
+        h_sizer3.Add(self.c_btn3, 0, wx.EXPAND | wx.ALL, 2)
+        docsizer.Add(h_sizer3, 0, wx.EXPAND | wx.ALL, 3)
+
+        #-----
+        h_sizer4 = wx.BoxSizer()
+        self.d_name4 = wx.TextCtrl(self, wx.ID_ANY,'王月', wx.DefaultPosition, wx.Size(60, 20),
+                                   wx.TE_READONLY)
+        h_sizer4.Add(self.d_name4, 0, wx.EXPAND | wx.ALL, 3)
+        major = wx.TextCtrl(self, wx.ID_ANY,'中药学', wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
+        h_sizer4.Add(major, 0, wx.EXPAND | wx.ALL, 3)
+        t_gender = wx.TextCtrl(self, wx.ID_ANY, '女', wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
+        h_sizer4.Add(t_gender, 0, wx.EXPAND | wx.ALL, 3)
+        self.c_btn4 = wx.Button(self, 10004, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
+        h_sizer4.Add(self.c_btn4, 0, wx.EXPAND | wx.ALL, 2)
+        docsizer.Add(h_sizer4, 0, wx.EXPAND | wx.ALL, 3)
+        #---
+        h_sizer5 = wx.BoxSizer()
+        self.d_name5 = wx.TextCtrl(self, wx.ID_ANY, '马医生', wx.DefaultPosition, wx.Size(60, 20),
+                                   wx.TE_READONLY)
+        h_sizer5.Add(self.d_name5, 0, wx.EXPAND | wx.ALL, 3)
+        major = wx.TextCtrl(self, wx.ID_ANY, '中药学', wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
+        h_sizer5.Add(major, 0, wx.EXPAND | wx.ALL, 3)
+        t_gender = wx.TextCtrl(self, wx.ID_ANY, '男', wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
+        h_sizer5.Add(t_gender, 0, wx.EXPAND | wx.ALL, 3)
+        self.c_btn5 = wx.Button(self, 10005, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
+        h_sizer5.Add(self.c_btn5, 0, wx.EXPAND | wx.ALL, 2)
+        docsizer.Add(h_sizer5, 0, wx.EXPAND | wx.ALL, 3)
+
+        self.SetSizer(docsizer)
+        docsizer.Layout()
+
+        self.Bind(wx.EVT_BUTTON, self.OnButton, self.c_btn1)
+        self.Bind(wx.EVT_BUTTON, self.OnButton, self.c_btn2)
+        self.Bind(wx.EVT_BUTTON, self.OnButton, self.c_btn3)
+        self.Bind(wx.EVT_BUTTON, self.OnButton, self.c_btn4)
+        self.Bind(wx.EVT_BUTTON, self.OnButton, self.c_btn5)
+
+    def OnButton(self,eve):
+        id=eve.GetId()
+        name=''
+        if id==10001:
+            name=self.d_name1.GetValue()
+        elif id==10002:
+            name = self.d_name2.GetValue()
+        elif id==10003:
+            name = self.d_name3.GetValue()
+        elif id==10004:
+            name = self.d_name4.GetValue()
+        elif id==10005:
+            name = self.d_name5.GetValue()
+        ls = wx.MessageDialog(self, "抱歉！与"+str(name)+"的对话链接暂时无法打开，请稍后再试", "警告",
+                              wx.OK | wx.ICON_INFORMATION)
+        ls.ShowModal()
+        ls.Destroy()
+        eve.Skip()
+
+
+class FeaturedRecipes(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+
+        searchsizer = wx.BoxSizer(wx.VERTICAL)
+        sh_sizer1= wx.BoxSizer()
+        m_comboBox1Choices = [u"营养早餐", u"丰盛午餐", u"健康晚餐", u"肌肉食谱", u"孕妇食谱", u"春季食谱", u"夏季食谱", u"秋季食谱", u"冬季食谱"]
+        self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,wx.CB_READONLY)
+        sh_sizer1.Add(self.m_comboBox1, 7, wx.ALL, 5)
+        self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
+        sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
+
+        searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
+
+        self.SetSizer(searchsizer)
+        searchsizer.Layout()
+
+        self.m_comboBox1.Bind(wx.EVT_COMBOBOX, self.OnChooseRecipes)
+        self.more_button.Bind(wx.EVT_BUTTON,self.OnAButton)
+
+    def OnChooseRecipes(self,eve):
+        print("1")
+        eve.Skip()
+
+    def OnAButton(self,eve):
+        print("2")
+        eve.Skip()
 
 
 class MyApp(wx.App):
