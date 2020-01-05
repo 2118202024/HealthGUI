@@ -3,7 +3,7 @@ import time
 import wx.html
 import wx
 import os
-
+import base64
 import sys
 
 from HCJ_DB_Helper import HCJ_database
@@ -297,7 +297,6 @@ class FlatMenuDemo(wx.Frame):
 
     def OnPersonalInfo(self, event):
         event.Skip()
-        
 
     def OnRegistered(self, event):
         ls=FormDialog()
@@ -450,9 +449,6 @@ class FlatMenuDemo(wx.Frame):
                 menuItem = FM.FlatMenuItem(self._longPopUpMenu, wx.ID_ANY, "Menu Item #%ld"%(ii+1))
                 self._longPopUpMenu.AppendItem(menuItem)
 
-# ------------------------------------------
-# Event handlers
-# ------------------------------------------
 
     def OnStyle(self, event):
 
@@ -464,45 +460,6 @@ class FlatMenuDemo(wx.Frame):
         self._mtb.Refresh()
         self.Update()
 
-
-    def OnShowCustom(self, event):
-
-        self._mb.ShowCustomize(event.IsChecked())
-
-
-    def OnLCDMonitor(self, event):
-
-        self._mb.SetLCDMonitor(event.IsChecked())
-
-
-    def OnTransparency(self, event):
-
-        transparency = ArtManager.Get().GetTransparency()
-        dlg = wx.TextEntryDialog(self, 'Please enter a value for menu transparency',
-                                 'FlatMenu Transparency', str(transparency))
-
-        if dlg.ShowModal() != wx.ID_OK:
-            dlg.Destroy()
-            return
-
-        value = dlg.GetValue()
-        dlg.Destroy()
-
-        try:
-            value = int(value)
-        except:
-            dlg = wx.MessageDialog(self, "Invalid transparency value!", "Error",
-                                   wx.OK | wx.ICON_ERROR)
-            dlg.ShowModal()
-            dlg.Destroy()
-
-        if value < 0 or value > 255:
-            dlg = wx.MessageDialog(self, "Invalid transparency value!", "Error",
-                                   wx.OK | wx.ICON_ERROR)
-            dlg.ShowModal()
-            dlg.Destroy()
-
-        ArtManager.Get().SetTransparency(value)
 
     def GetStringFromUser(self, msg):
 
@@ -697,7 +654,6 @@ class DoctorPanel(wx.Panel):
         ls.Destroy()
         eve.Skip()
 
-
 class FeaturedRecipes(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -730,32 +686,45 @@ class OnRecipesSearch(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
 
-        searchsizer = wx.BoxSizer(wx.VERTICAL)
+        self.searchsizer = wx.BoxSizer(wx.VERTICAL)
         sh_sizer1 = wx.BoxSizer()
         self.m_searchCtrl1 = wx.SearchCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
-        # m_comboBox1Choices = [u"营养早餐", u"丰盛午餐", u"健康晚餐", u"肌肉食谱", u"孕妇食谱", u"春季食谱", u"夏季食谱", u"秋季食谱", u"冬季食谱"]
-        # self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,
-        #                                wx.CB_READONLY)
         sh_sizer1.Add(self.m_searchCtrl1, 7, wx.ALL, 5)
         self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
         sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
 
-        searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
+        self.searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
 
-        self.SetSizer(searchsizer)
-        searchsizer.Layout()
+        self.SetSizer(self.searchsizer)
+        self.searchsizer.Layout()
 
-        self.m_searchCtrl1.Bind(wx.EVT_TEXT, self.OnSearchText)
+
+        self.m_searchCtrl1.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearchText)
 
     def OnSearchText(self, eve):
         name=self.m_searchCtrl1.GetValue()
-        sql="SELECT `picture`,`details` FROM `recipe_details` WHERE `recipe_name` like '%%s%%' "%name
-
-        result=db.do_sql(sql)
+        try:
+            sql="SELECT `picture`,`details`,`recipe_name` FROM `recipe_details` WHERE `recipe_name` like '%%%s%%' "%name
+            result=db.do_sql(sql)
+        except:
+            result=[]
         if len(result)==0:
-            str1 = '暂无推荐食谱，请重新输入'
-        elif len(result)<=5:
+            str1 = wx.StaticText( self, wx.ID_ANY, u"暂无推荐食谱，请重新输入", wx.DefaultPosition, wx.DefaultSize, 0 )
+            self.searchsizer.Add(str1, 0, wx.ALL, 5)
+        elif len(result)>0:
+            sizer = wx.FlexGridSizer(cols=3, hgap=5, vgap=5)
+            for name in result:
+                with open('%s.jpg'%name[2], 'wb') as file:
+                    image = base64.b64decode(name[0])  # 解码
+                    file.write(image)
+                # ani = opj('%s.jpg'%name[2])
+                sizer.Add(image, 0, wx.ALL, 10)
+
+            self.searchsizer.Add(sizer, 1, wx.EXPAND | wx.ALL, 20)
             print('1234567')
+
+        self.searchsizer.Layout()
+        # self.searchsizer.Fit()
         eve.Skip()
 
 class OnDiseaseSearch(wx.Panel):
@@ -775,6 +744,16 @@ class OnDiseaseSearch(wx.Panel):
 
         self.SetSizer(searchsizer)
         searchsizer.Layout()
+
+from wx.adv import Animation, AnimationCtrl
+
+def opj(path):
+    """Convert paths to the platform-specific separator"""
+    st = os.path.join(*tuple(path.split('/')))
+    # HACK: on Linux, a leading / gets lost...
+    if path.startswith('/'):
+        st = '/' + st
+    return st
 
 
 class FormDialog(sc.SizedDialog):
