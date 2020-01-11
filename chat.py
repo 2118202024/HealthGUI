@@ -15,8 +15,7 @@ import wx.xrc
 ###########################################################################
 from HCJ_DB_Helper import HCJ_database
 
-
-class MyFrame1(wx.Frame):
+class ChatFrame1(wx.Frame):
 
     def __init__(self, parent):
         self.db = HCJ_database()
@@ -71,15 +70,25 @@ class MyFrame1(wx.Frame):
         self.bt_sumbit.Bind(wx.EVT_BUTTON, self.sumbit)
         self.bt_clear.Bind(wx.EVT_BUTTON, self.clear)
 
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
     def __del__(self):
-        pass
+        self.timer.Stop()
+
+    def OnClose(self, event):
+
+        self.timer.Stop()
+        event.Skip()
 
     # Virtual event handlers, overide them in your derived class
     def myinit(self):
         self.user="user"
+        self.server="server"
     def setuser(self,str):
         self.user=str
 
+    def setserver(self,str):
+        self.server=str
 
     def cb1_click(self, event):
         self.user="user"
@@ -88,7 +97,7 @@ class MyFrame1(wx.Frame):
         event.Skip()
 
     def cb2_click(self, event):
-        self.user="server"
+        self.server="server"
         self.cb_2.SetValue(True)
         self.cb_1.SetValue(False)
         event.Skip()
@@ -122,3 +131,4 @@ class MyFrame1(wx.Frame):
     def db_chat_update(self,info,user1):
         sql="INSERT INTO chatlog  (`info`,`user`) VALUES ('%s','%s')"%(info,user1)
         self.db.upda_sql(sql)
+

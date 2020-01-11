@@ -55,7 +55,7 @@ except ImportError: # if it's not there locally, try the wxPython lib.
     import wx.lib.agw.aui as aui
     from wx.lib.agw.aui import aui_switcherdialog as ASD
 
-from PIL import Image
+from chat import ChatFrame1
 
 import wx.lib.sized_controls as sc
 db=HCJ_database()
@@ -196,26 +196,6 @@ class FlatMenuDemo(wx.Frame):
                                   aui.AUI_NB_TAB_EXTERNAL_MOVE)
         self._notebook_theme = 5
 
-        if _hasAUI:
-            # AUI support
-            self._mgr.AddPane(self.CreateNotebook(), AuiPaneInfo().Name("main_panel").Top().
-                              CenterPane())
-
-            self._mgr.AddPane(DoctorPanel(self), AuiPaneInfo().Name("医师信息").
-                              Caption("医师信息").Right().
-                              MinSize(wx.Size(300, 100)))
-
-            self._mgr.AddPane(FeaturedRecipes(self), AuiPaneInfo().
-                              Name("thirdauto").Caption("特色食谱").
-                              Bottom().MinimizeButton(True).MinSize(wx.Size(800, 250)), target=self._mgr.GetPane("autonotebook"))
-
-            self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("test8").Caption("更多健康食谱文章").
-                              Bottom().Right().CloseButton(True).MaximizeButton(True).
-                              MinimizeButton(True).MinSize(wx.Size(300, 100)))
-
-            self._mb.PositionAUI(self._mgr)
-            self._mgr.Update()
-
         ArtManager.Get().SetMBVerticalGradient(True)
         ArtManager.Get().SetRaiseToolbar(False)
 
@@ -234,6 +214,25 @@ class FlatMenuDemo(wx.Frame):
         ctrl.SetPage(self.GetIntroText())
         return ctrl
 
+    def DoNewLayout(self):
+        self._mgr.AddPane(self.CreateNotebook(), AuiPaneInfo().Name("main_panel").Top().
+                          CenterPane())
+
+        self._mgr.AddPane(DoctorPanel(self, self.operator), AuiPaneInfo().Name("医师信息").
+                          Caption("医师信息").Right().CloseButton(False).MaximizeButton(True).MinimizeButton(True).
+                          MinSize(wx.Size(300, 100)))
+
+        self._mgr.AddPane(FeaturedRecipes(self), AuiPaneInfo().
+                          Name("thirdauto").Caption("特色食谱").
+                          Bottom().MinimizeButton(True).MinSize(wx.Size(800, 250)),
+                          target=self._mgr.GetPane("autonotebook"))
+
+        self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("test8").Caption("更多健康食谱文章").
+                          Bottom().Right().CloseButton(False).MaximizeButton(True).
+                          MinimizeButton(True).MinSize(wx.Size(300, 100)))
+
+        self._mb.PositionAUI(self._mgr)
+        self._mgr.Update()
 
     def CreateMenu(self):
 
@@ -304,6 +303,7 @@ class FlatMenuDemo(wx.Frame):
         ls.ShowModal()
         ls.Destroy()
         event.Skip()
+
     def GetUserInfo(self):
         sql = "SELECT `password`,`name` FROM `user_info` WHERE 1 "
         result = db.do_sql(sql)
@@ -317,21 +317,16 @@ class FlatMenuDemo(wx.Frame):
         if dlg.ShowModal() == wx.ID_OK:
             st = time.strftime("%Y{y}%m{m}%d{d}%H{h}%M{m1}%S{s}").format(y='/', m='/', d='  ', h=":", m1=":", s="")
             password = dlg.GetValue()
-
             if password in staff_inform or password == "hello8031":
-                try:
-                    print(st + ' 登录成功\r\n')
-                except:
-                    pass
                 if password == "hello8031":
-                    self.statusbar.SetStatusText("超级用户", 2)
-
+                    staff_name="超级用户"
+                    self.statusbar.SetStatusText(u"操作员：" + staff_name,2)
                 else:
                     staff_name = staff_inform[password]
                     self.statusbar.SetStatusText(u"操作员：" + staff_name,2)
-
-                # self._mgr.LoadPerspective(self.perspective_login)
-                self._mgr.Update()
+                self.SetOperator(staff_name)
+                self.DoNewLayout()
+                # self._mgr.Update()
             else:
                 try:
                     print(st + '  因密码错误，登录失败\r\n')
@@ -342,7 +337,6 @@ class FlatMenuDemo(wx.Frame):
                                       wx.OK | wx.ICON_INFORMATION)
                 ls.ShowModal()
                 ls.Destroy()
-                # self.log.WriteText('You entered: %s\n' % dlg.GetValue())
         dlg.Destroy()
         event.Skip()
 
@@ -421,7 +415,6 @@ class FlatMenuDemo(wx.Frame):
             menuItem = FM.FlatMenuItem(subMenu, 20013, "Sub-menu item", "", wx.ITEM_NORMAL, subSubMenu)
             subMenu.AppendItem(menuItem)
 
-
     def CreateLongPopupMenu(self):
 
         if hasattr(self, "_longPopUpMenu"):
@@ -449,7 +442,6 @@ class FlatMenuDemo(wx.Frame):
                 menuItem = FM.FlatMenuItem(self._longPopUpMenu, wx.ID_ANY, "Menu Item #%ld"%(ii+1))
                 self._longPopUpMenu.AppendItem(menuItem)
 
-
     def OnStyle(self, event):
 
         eventId = event.GetId()
@@ -459,7 +451,6 @@ class FlatMenuDemo(wx.Frame):
         self._mb.Refresh()
         self._mtb.Refresh()
         self.Update()
-
 
     def GetStringFromUser(self, msg):
 
@@ -560,8 +551,13 @@ class FlatMenuDemo(wx.Frame):
 
         return ctrl
 
+    def SetOperator(self,name):
+        self.operator=name
+
+
 class DoctorPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent,operator):
+        self.operator=operator
         wx.Panel.__init__(self, parent, -1)
 
         docsizer = wx.BoxSizer(wx.VERTICAL)
@@ -647,10 +643,18 @@ class DoctorPanel(wx.Panel):
             name = self.d_name4.GetValue()
         elif id==10005:
             name = self.d_name5.GetValue()
-        ls = wx.MessageDialog(self, "抱歉！与"+str(name)+"的对话链接暂时无法打开，请稍后再试", "警告",
-                              wx.OK | wx.ICON_INFORMATION)
-        ls.ShowModal()
-        ls.Destroy()
+
+        cf = ChatFrame1(None)
+        cf.setuser(self.operator)
+        # if self.operator=='未登录':
+        #     ls = wx.MessageDialog(self, "抱歉！与" + str(name) + "的对话链接暂时无法打开，请登录后再试", "未登录警告",
+        #                                                 wx.OK | wx.ICON_INFORMATION)
+        #     ls.ShowModal()
+        #     ls.Destroy()
+        cf.setserver(name)
+        cf.CenterOnParent(wx.BOTH)
+        cf.Show()
+        cf.Center(wx.BOTH)
         eve.Skip()
 
 class FeaturedRecipes(wx.Panel):
