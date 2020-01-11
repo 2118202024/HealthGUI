@@ -1,11 +1,5 @@
 # -*- encoding: utf-8 -*-
-"""
-@File    : MyFrame.py
-@Time    : 2020/1/4 15:13
-@Author  : zx
-@Email   : zhaoxiao@tju.edu.cn
-@Software: PyCharm 
-"""
+
 import time
 
 import wx

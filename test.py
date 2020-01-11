@@ -179,7 +179,7 @@ class FlatMenuDemo(wx.Frame):
         self.statusbar = self.CreateStatusBar(4)
         self.statusbar.SetStatusWidths([-3, -2, -1, -1])
         self.statusbar.SetStatusText("          欢迎使用本系统", 0)
-        self.statusbar.SetStatusText("Welcome to wxPython!", 1)
+        self.statusbar.SetStatusText("", 1)
         self.timer = wx.PyTimer(self.Notify)
         self.timer.Start(100)
 
@@ -356,7 +356,6 @@ class FlatMenuDemo(wx.Frame):
             self._mgr.UnInit()
 
         self.Destroy()
-
 
     def CreatePopupMenu(self):
 
@@ -547,8 +546,7 @@ class FlatMenuDemo(wx.Frame):
         page_bmp = wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, wx.Size(16, 16))
         ctrl.AddPage(OnRecipesSearch(ctrl), "按菜谱搜索", False, page_bmp)
 
-        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some text", wx.DefaultPosition, wx.DefaultSize,
-                                 wx.TE_MULTILINE | wx.NO_BORDER), "按病名搜索", False, page_bmp)
+        ctrl.AddPage(OnDiseaseSearch(ctrl),  "按病名搜索", False, page_bmp)
 
         ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
                                  wx.TE_MULTILINE | wx.NO_BORDER), "按身体异常搜索")
@@ -657,25 +655,100 @@ class DoctorPanel(wx.Panel):
 class FeaturedRecipes(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-
-        searchsizer = wx.BoxSizer(wx.VERTICAL)
-        sh_sizer1= wx.BoxSizer()
+        self.mainPanel = wx.Panel(self)
+        self.mainPanel.SetBackgroundColour(wx.BLUE)
+        # searchsizer = wx.BoxSizer(wx.VERTICAL)
+        # sh_sizer1= wx.BoxSizer()
         m_comboBox1Choices = [u"营养早餐", u"丰盛午餐", u"健康晚餐", u"肌肉食谱", u"孕妇食谱", u"春季食谱", u"夏季食谱", u"秋季食谱", u"冬季食谱"]
-        self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,wx.CB_READONLY)
-        sh_sizer1.Add(self.m_comboBox1, 7, wx.ALL, 5)
-        self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
-        sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
+        self.m_comboBox1 = wx.ComboBox(self.mainPanel, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,wx.CB_READONLY)
+        # sh_sizer1.Add(self.m_comboBox1, 7, wx.ALL, 5)
+        self.more_button = AB.AquaButton(self.mainPanel, -1, None, "更多食谱")
+        # self.more_button.SetForegroundColour(0,0,0)
+        # sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
 
-        searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
+        # searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
 
-        self.SetSizer(searchsizer)
-        searchsizer.Layout()
+        # self.SetSizer(searchsizer)
+        # searchsizer.Layout()
+        self.DoLayout()
+        self.BindEvents()
 
+    def DoLayout(self):
+        frameSizer = wx.BoxSizer(wx.VERTICAL)
+        mainSizer = wx.BoxSizer(wx.VERTICAL)
+        topsizer=wx.BoxSizer()
+        picSizer = wx.FlexGridSizer(3, 5, 1, 15)
+
+        topsizer.Add(self.m_comboBox1, 7, wx.ALL| wx.ALIGN_CENTER_VERTICAL, 6 )
+        topsizer.Add(self.more_button, 3, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
+
+        label1 = wx.StaticText(self.mainPanel, -1, "1 Colour")
+        label2 = wx.StaticText(self.mainPanel, -1, "2 Colour")
+        label3 = wx.StaticText(self.mainPanel, -1, "3 Colour")
+        label4 = wx.StaticText(self.mainPanel, -1, "4 Colour")
+        label5 = wx.StaticText(self.mainPanel, -1, "5 Colour")
+        picSizer.Add(label1, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+        picSizer.Add(label2, 0, wx.ALIGN_CENTER_VERTICAL)
+
+        picSizer.Add(label3, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+        picSizer.Add(label4, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+        picSizer.Add(label5, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+
+        labelBack = wx.StaticText(self.mainPanel, -1, "Background Colour")
+        labelHover = wx.StaticText(self.mainPanel, -1, "Hover Colour")
+        labelFocus = wx.StaticText(self.mainPanel, -1, "Focus Colour")
+        labelText = wx.StaticText(self.mainPanel, -1, "Text Colour")
+        label6 = wx.StaticText(self.mainPanel, -1, "6 Colour")
+
+        picSizer.Add(labelBack)
+        picSizer.Add(labelHover)
+        picSizer.Add(labelFocus)
+        picSizer.Add(labelText)
+        picSizer.Add(label6)
+
+        label7 = wx.StaticText(self.mainPanel, -1, "7 Colour")
+        label8 = wx.StaticText(self.mainPanel, -1, "8 Colour")
+        label9 = wx.StaticText(self.mainPanel, -1, "9 Colour")
+        label10 = wx.StaticText(self.mainPanel, -1, "10 Colour")
+        label11 = wx.StaticText(self.mainPanel, -1, "11 Colour")
+
+        picSizer.Add(label7)
+        picSizer.Add(label8)
+        picSizer.Add(label9)
+        picSizer.Add(label10)
+        picSizer.Add(label11)
+
+        mainSizer.Add(topsizer, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+        mainSizer.Add(picSizer, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+
+        boldFont = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
+        boldFont.SetWeight(wx.FONTWEIGHT_BOLD)
+
+        for child in self.mainPanel.GetChildren():
+            if isinstance(child, wx.StaticText):
+                child.SetFont(boldFont)
+
+        self.mainPanel.SetSizer(mainSizer)
+        mainSizer.Layout()
+        frameSizer.Add(self.mainPanel, 1, wx.EXPAND)
+        self.SetSizer(frameSizer)
+        frameSizer.Layout()
+    def BindEvents(self):
         self.m_comboBox1.Bind(wx.EVT_COMBOBOX, self.OnChooseRecipes)
-        self.more_button.Bind(wx.EVT_BUTTON,self.OnAButton)
+        self.more_button.Bind(wx.EVT_BUTTON, self.OnAButton)
+
 
     def OnChooseRecipes(self,eve):
-        print("1")
+        name = str(self.m_comboBox1.GetValue())
+        #TODO
+        try:
+            sql = "SELECT `picture`,`details`,`recipe_name` FROM `recipe_details` WHERE `recipe_type`='%s' " % name
+            result = db.do_sql(sql)
+            for name in result():
+                print(name[2])
+        except:
+            result = [[]]
+            print('erro')
         eve.Skip()
 
     def OnAButton(self,eve):
@@ -698,7 +771,8 @@ class OnRecipesSearch(wx.Panel):
         self.SetSizer(self.searchsizer)
         self.searchsizer.Layout()
 
-
+        self.sizer = wx.FlexGridSizer(cols=3, hgap=5, vgap=5)
+        self.searchsizer.Add(self.sizer, 0, wx.ALL, 5)
         self.m_searchCtrl1.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearchText)
 
     def OnSearchText(self, eve):
@@ -710,21 +784,22 @@ class OnRecipesSearch(wx.Panel):
             result=[]
         if len(result)==0:
             str1 = wx.StaticText( self, wx.ID_ANY, u"暂无推荐食谱，请重新输入", wx.DefaultPosition, wx.DefaultSize, 0 )
-            self.searchsizer.Add(str1, 0, wx.ALL, 5)
+            self.sizer.Add(str1, 0, wx.ALL, 5)
         elif len(result)>0:
-            sizer = wx.FlexGridSizer(cols=3, hgap=5, vgap=5)
+            self.sizer.Clear()
             for name in result:
                 with open('%s.jpg'%name[2], 'wb') as file:
                     image = base64.b64decode(name[0])  # 解码
                     file.write(image)
-                # ani = opj('%s.jpg'%name[2])
-                sizer.Add(image, 0, wx.ALL, 10)
+            t=wx.Bitmap('%s.jpg'%name[2],wx.BITMAP_TYPE_ANY)
+            t.SetSize((120,120))
+            self.m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,
+                                             t, wx.DefaultPosition, wx.DefaultSize, 0)
+            self.sizer.Add(self.m_bitmap1, 0, wx.ALL, 9)
 
-            self.searchsizer.Add(sizer, 1, wx.EXPAND | wx.ALL, 20)
-            print('1234567')
+            # self.searchsizer.Add(self.sizer, 1, wx.EXPAND | wx.ALL, 20)
 
         self.searchsizer.Layout()
-        # self.searchsizer.Fit()
         eve.Skip()
 
 class OnDiseaseSearch(wx.Panel):
@@ -733,8 +808,8 @@ class OnDiseaseSearch(wx.Panel):
 
         searchsizer = wx.BoxSizer(wx.VERTICAL)
         sh_sizer1 = wx.BoxSizer()
-        m_comboBox1Choices = [u"营养早餐", u"丰盛午餐", u"健康晚餐", u"肌肉食谱", u"孕妇食谱", u"春季食谱", u"夏季食谱", u"秋季食谱", u"冬季食谱"]
-        self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,
+        m_comboBox1Choices = [u"高血压", u"糖尿病", u"心脏病", u"缺乏维生素A", u"缺乏维生素B", u"缺乏维生素E", u"缺铁", u"缺锌", u"缺钙"]
+        self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,
                                        wx.CB_READONLY)
         sh_sizer1.Add(self.m_comboBox1, 7, wx.ALL, 5)
         self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
@@ -744,8 +819,16 @@ class OnDiseaseSearch(wx.Panel):
 
         self.SetSizer(searchsizer)
         searchsizer.Layout()
-
-from wx.adv import Animation, AnimationCtrl
+        self.m_comboBox1.Bind(wx.EVT_COMBOBOX, self.OnChooseRecipes)
+    def OnChooseRecipes(self,eve):
+        name = self.m_comboBox1.GetValue()
+        try:
+            sql="SELECT `picture`,`details`,`recipe_name` FROM `recipe_details` WHERE `recipe_type`='%s' "%name
+            result=db.do_sql(sql)
+            for name in result():
+                print(name[2])
+        except:
+            result=[[]]
 
 def opj(path):
     """Convert paths to the platform-specific separator"""

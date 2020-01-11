@@ -4,8 +4,6 @@
 使用方法：1.在主程序中先实例化DB Mysql数据库操作类。
       2.使用方法:db=database()  db.fetch_all("sql")
 '''
-import time
-import MySQLdb
 import MySQLdb.cursors
 
 import MySQLdb
