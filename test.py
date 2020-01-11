@@ -55,6 +55,8 @@ except ImportError: # if it's not there locally, try the wxPython lib.
     import wx.lib.agw.aui as aui
     from wx.lib.agw.aui import aui_switcherdialog as ASD
 
+from PIL import Image
+
 import wx.lib.sized_controls as sc
 db=HCJ_database()
 MENU_NEW_FILE = 10010
@@ -157,7 +159,6 @@ class FM_MyRenderer(FM.FMRenderer):
         dc.SetPen(wx.Pen(startColour))
         dc.SetBrush(wx.Brush(startColour))
         dc.DrawRectangle(0, 0, rect.GetWidth(), rect.GetHeight())
-
 
 class FlatMenuDemo(wx.Frame):
 
@@ -657,19 +658,11 @@ class FeaturedRecipes(wx.Panel):
         wx.Panel.__init__(self, parent, -1)
         self.mainPanel = wx.Panel(self)
         self.mainPanel.SetBackgroundColour(wx.BLUE)
-        # searchsizer = wx.BoxSizer(wx.VERTICAL)
-        # sh_sizer1= wx.BoxSizer()
         m_comboBox1Choices = [u"营养早餐", u"丰盛午餐", u"健康晚餐", u"肌肉食谱", u"孕妇食谱", u"春季食谱", u"夏季食谱", u"秋季食谱", u"冬季食谱"]
         self.m_comboBox1 = wx.ComboBox(self.mainPanel, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,wx.CB_READONLY)
-        # sh_sizer1.Add(self.m_comboBox1, 7, wx.ALL, 5)
         self.more_button = AB.AquaButton(self.mainPanel, -1, None, "更多食谱")
-        # self.more_button.SetForegroundColour(0,0,0)
-        # sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
 
-        # searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
 
-        # self.SetSizer(searchsizer)
-        # searchsizer.Layout()
         self.DoLayout()
         self.BindEvents()
 
@@ -764,6 +757,7 @@ class OnRecipesSearch(wx.Panel):
         self.m_searchCtrl1 = wx.SearchCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
         sh_sizer1.Add(self.m_searchCtrl1, 7, wx.ALL, 5)
         self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
+        # btntest = AB.AquaButton(self, -1, None, "ceshi")
         sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
 
         self.searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
@@ -771,36 +765,45 @@ class OnRecipesSearch(wx.Panel):
         self.SetSizer(self.searchsizer)
         self.searchsizer.Layout()
 
-        self.sizer = wx.FlexGridSizer(cols=3, hgap=5, vgap=5)
+        self.sizer = wx.FlexGridSizer(cols=5, hgap=15, vgap=15)
         self.searchsizer.Add(self.sizer, 0, wx.ALL, 5)
         self.m_searchCtrl1.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearchText)
-
+        # self.more_button.Bind(wx.EVT_BUTTON, self.Ontest)
+        # self.sizer.Add(btntest, 0, wx.ALL, 5)
+        # self.SetSizer(self.searchsizer)
+        # self.searchsizer.Layout()
+    #
     def OnSearchText(self, eve):
         name=self.m_searchCtrl1.GetValue()
         try:
-            sql="SELECT `picture`,`details`,`recipe_name` FROM `recipe_details` WHERE `recipe_name` like '%%%s%%' "%name
+            sql="SELECT `details`,`recipe_name` FROM `recipe_details` WHERE `recipe_name` like '%%%s%%' "%name
             result=db.do_sql(sql)
         except:
             result=[]
-        if len(result)==0:
-            str1 = wx.StaticText( self, wx.ID_ANY, u"暂无推荐食谱，请重新输入", wx.DefaultPosition, wx.DefaultSize, 0 )
+            # return False
+        maxlen=len(result)
+        if maxlen==0:
+            str1 = wx.StaticText(self, wx.ID_ANY, u"暂无推荐食谱，请重新输入", wx.DefaultPosition, wx.DefaultSize, 0 )
             self.sizer.Add(str1, 0, wx.ALL, 5)
-        elif len(result)>0:
+        elif maxlen>0:
             self.sizer.Clear()
-            for name in result:
-                with open('%s.jpg'%name[2], 'wb') as file:
-                    image = base64.b64decode(name[0])  # 解码
-                    file.write(image)
-            t=wx.Bitmap('%s.jpg'%name[2],wx.BITMAP_TYPE_ANY)
-            t.SetSize((120,120))
-            self.m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,
-                                             t, wx.DefaultPosition, wx.DefaultSize, 0)
-            self.sizer.Add(self.m_bitmap1, 0, wx.ALL, 9)
+            for i in range(maxlen):
+                road = os.path.exists('./bitmaps/%s.jpg'%result[i][1])
+                if road:
+                    bmp = wx.Bitmap('./bitmaps/%s.jpg'%result[i][1])
+                    self.m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,
+                                                 bmp, wx.DefaultPosition, (150,120), 0)
+                    self.sizer.Add(self.m_bitmap1, 0, wx.ALL, 5)
+                else:
+                    print('不存在')
 
-            # self.searchsizer.Add(self.sizer, 1, wx.EXPAND | wx.ALL, 20)
 
         self.searchsizer.Layout()
         eve.Skip()
+
+    def Ontest(self,eve):
+        self.sizer.Clear()
+        print(1)
 
 class OnDiseaseSearch(wx.Panel):
     def __init__(self, parent):
@@ -829,14 +832,6 @@ class OnDiseaseSearch(wx.Panel):
                 print(name[2])
         except:
             result=[[]]
-
-def opj(path):
-    """Convert paths to the platform-specific separator"""
-    st = os.path.join(*tuple(path.split('/')))
-    # HACK: on Linux, a leading / gets lost...
-    if path.startswith('/'):
-        st = '/' + st
-    return st
 
 
 class FormDialog(sc.SizedDialog):
