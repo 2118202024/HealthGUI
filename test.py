@@ -178,8 +178,8 @@ class FlatMenuDemo(wx.Frame):
         self.log = log
 
         self.statusbar = self.CreateStatusBar(4)
-        self.statusbar.SetStatusWidths([-3, -2, -1, -1])
-        self.statusbar.SetStatusText("          欢迎使用本系统", 0)
+        self.statusbar.SetStatusWidths([-2, -1, -2, -1])
+        self.statusbar.SetStatusText("        系统正在运行......", 0)
         self.statusbar.SetStatusText("", 1)
         self.timer = wx.PyTimer(self.Notify)
         self.timer.Start(100)
@@ -187,7 +187,7 @@ class FlatMenuDemo(wx.Frame):
         self.CreateMenu()
         self.ConnectEvents()
 
-        #
+        # #
         self._notebook_style = aui.AUI_NB_DEFAULT_STYLE | wx.NO_BORDER
         self._notebook_style &= ~(aui.AUI_NB_CLOSE_BUTTON |
                                   aui.AUI_NB_CLOSE_ON_ACTIVE_TAB |
@@ -215,11 +215,18 @@ class FlatMenuDemo(wx.Frame):
         return ctrl
 
     def DoNewLayout(self):
+        helpMenu = FM.FlatMenu()
+        helpImg = wx.Bitmap(os.path.join(bitmapDir, "help-16.png"), wx.BITMAP_TYPE_PNG)
+        item = FM.FlatMenuItem(helpMenu, MENU_HELP, "&个人信息\tCtrl+A", "About...", wx.ITEM_NORMAL, None, helpImg)
+        helpMenu.AppendItem(item)
+        self._mb.Append(helpMenu, "&管理")
+
+
         self._mgr.AddPane(self.CreateNotebook(), AuiPaneInfo().Name("main_panel").Top().
                           CenterPane())
 
         self._mgr.AddPane(DoctorPanel(self, self.operator), AuiPaneInfo().Name("医师信息").
-                          Caption("医师信息").Right().CloseButton(False).MaximizeButton(True).MinimizeButton(True).
+                          Caption("医师信息").Right().CloseButton(False).MaximizeButton(False).MinimizeButton(True).
                           MinSize(wx.Size(300, 100)))
 
         self._mgr.AddPane(FeaturedRecipes(self), AuiPaneInfo().
@@ -235,12 +242,11 @@ class FlatMenuDemo(wx.Frame):
         self._mgr.Update()
 
     def CreateMenu(self):
-
         # Create the menubar
-        self._mb = FM.FlatMenuBar(self, wx.ID_ANY, 32, 5, options = FM_OPT_SHOW_TOOLBAR | FM_OPT_SHOW_CUSTOMIZE)
+        self._mb = FM.FlatMenuBar(self, wx.ID_ANY, 32, 5, options = FM_OPT_SHOW_TOOLBAR )
 
         fileMenu  = FM.FlatMenu()
-        helpMenu = FM.FlatMenu()
+
 
         self.newMyTheme = self._mb.GetRendererManager().AddRenderer(FM_MyRenderer())
 
@@ -248,29 +254,18 @@ class FlatMenuDemo(wx.Frame):
         open_folder_bmp = wx.Bitmap(os.path.join(bitmapDir, "fileopen.png"), wx.BITMAP_TYPE_PNG)
         new_file_bmp = wx.Bitmap(os.path.join(bitmapDir, "filenew.png"), wx.BITMAP_TYPE_PNG)
         save_bmp = wx.Bitmap(os.path.join(bitmapDir, "filesave.png"), wx.BITMAP_TYPE_PNG)
-        context_bmp = wx.Bitmap(os.path.join(bitmapDir, "contexthelp-16.png"), wx.BITMAP_TYPE_PNG)
-        helpImg = wx.Bitmap(os.path.join(bitmapDir, "help-16.png"), wx.BITMAP_TYPE_PNG)
-        # Create a context menu
-        context_menu = FM.FlatMenu()
 
-        item = FM.FlatMenuItem(helpMenu, MENU_HELP, "&个人信息\tCtrl+A", "About...", wx.ITEM_NORMAL, None, helpImg)
-        helpMenu.AppendItem(item)
 
-        # Create the menu items
-        menuItem = FM.FlatMenuItem(context_menu, wx.ID_ANY, "Test Item", "", wx.ITEM_NORMAL, None, context_bmp)
-        context_menu.AppendItem(menuItem)
-
-        item = FM.FlatMenuItem(fileMenu, MENU_NEW_FILE, "&   登录", "登录", wx.ITEM_NORMAL)
+        item = FM.FlatMenuItem(fileMenu, MENU_NEW_FILE, "&   登录\tCtrl+A", "登录", wx.ITEM_NORMAL)
         fileMenu.AppendItem(item)
-        item.SetContextMenu(context_menu)
 
         self._mb.AddTool(MENU_NEW_FILE, "登录", new_file_bmp)
 
-        item = FM.FlatMenuItem(fileMenu, MENU_SAVE, "&   注册", "注册", wx.ITEM_NORMAL)
+        item = FM.FlatMenuItem(fileMenu, MENU_SAVE, "&   注册\tCtrl+A", "注册", wx.ITEM_NORMAL)
         fileMenu.AppendItem(item)
         self._mb.AddTool(MENU_SAVE, "注册", save_bmp)
 
-        item = FM.FlatMenuItem(fileMenu, MENU_OPEN_FILE, "&   注销", "注销", wx.ITEM_NORMAL)
+        item = FM.FlatMenuItem(fileMenu, MENU_OPEN_FILE, "&   注销\tCtrl+A", "注销", wx.ITEM_NORMAL)
         fileMenu.AppendItem(item)
         self._mb.AddTool(MENU_OPEN_FILE, "注销", open_folder_bmp)
         self._mb.AddSeparator()   # Toolbar separator
@@ -281,7 +276,6 @@ class FlatMenuDemo(wx.Frame):
 
         # Add menu to the menu bar
         self._mb.Append(fileMenu, "&File")
-        self._mb.Append(helpMenu, "&Help")
 
     def ConnectEvents(self):
 
@@ -761,7 +755,6 @@ class OnRecipesSearch(wx.Panel):
         self.m_searchCtrl1 = wx.SearchCtrl(self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0)
         sh_sizer1.Add(self.m_searchCtrl1, 7, wx.ALL, 5)
         self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
-        # btntest = AB.AquaButton(self, -1, None, "ceshi")
         sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
 
         self.searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
@@ -770,12 +763,30 @@ class OnRecipesSearch(wx.Panel):
         self.searchsizer.Layout()
 
         self.sizer = wx.FlexGridSizer(cols=5, hgap=15, vgap=15)
+        example_bmp1 = wx.Bitmap('./bitmaps/椒盐大虾.jpg')
+        m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,example_bmp1, wx.DefaultPosition, (180, 120), 0)
+        self.sizer.Add(m_bitmap1, 0, wx.ALL, 5)
+
+        example_bmp2 = wx.Bitmap('./bitmaps/丸子头.jpg')
+        m_bitmap2 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp2, wx.DefaultPosition, (180, 120), 0)
+        self.sizer.Add(m_bitmap2, 0, wx.ALL, 5)
+
+        example_bmp3 = wx.Bitmap('./bitmaps/千叶豆腐.jpg')
+        m_bitmap3 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp3, wx.DefaultPosition, (180, 120), 0)
+        self.sizer.Add(m_bitmap3, 0, wx.ALL, 5)
+
+        example_bmp4 = wx.Bitmap('./bitmaps/牛排.jpg')
+        m_bitmap4 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp4, wx.DefaultPosition, (180, 120), 0)
+        self.sizer.Add(m_bitmap4, 0, wx.ALL, 5)
+
+        example_bmp5 = wx.Bitmap('./bitmaps/烧卖.jpg')
+        example_bmp5.SetSize((180,120))
+        m_bitmap5 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp5, wx.DefaultPosition, wx.DefaultSize , 0)
+        self.sizer.Add(m_bitmap5, 0, wx.ALL, 5)
+
         self.searchsizer.Add(self.sizer, 0, wx.ALL, 5)
         self.m_searchCtrl1.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearchText)
-        # self.more_button.Bind(wx.EVT_BUTTON, self.Ontest)
-        # self.sizer.Add(btntest, 0, wx.ALL, 5)
-        # self.SetSizer(self.searchsizer)
-        # self.searchsizer.Layout()
+
     #
     def OnSearchText(self, eve):
         name=self.m_searchCtrl1.GetValue()
