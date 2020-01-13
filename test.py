@@ -261,11 +261,11 @@ class FlatMenuDemo(wx.Frame):
 
         self._mb.AddTool(MENU_NEW_FILE, "登录", new_file_bmp)
 
-        item = FM.FlatMenuItem(fileMenu, MENU_SAVE, "&   注册\tCtrl+A", "注册", wx.ITEM_NORMAL)
+        item = FM.FlatMenuItem(fileMenu, MENU_SAVE, "&   注册\tCtrl+B", "注册", wx.ITEM_NORMAL)
         fileMenu.AppendItem(item)
         self._mb.AddTool(MENU_SAVE, "注册", save_bmp)
 
-        item = FM.FlatMenuItem(fileMenu, MENU_OPEN_FILE, "&   注销\tCtrl+A", "注销", wx.ITEM_NORMAL)
+        item = FM.FlatMenuItem(fileMenu, MENU_OPEN_FILE, "&   注销\tCtrl+C", "注销", wx.ITEM_NORMAL)
         fileMenu.AppendItem(item)
         self._mb.AddTool(MENU_OPEN_FILE, "注销", open_folder_bmp)
         self._mb.AddSeparator()   # Toolbar separator
@@ -660,7 +660,6 @@ class FeaturedRecipes(wx.Panel):
         self.m_comboBox1 = wx.ComboBox(self.mainPanel, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,wx.CB_READONLY)
         self.more_button = AB.AquaButton(self.mainPanel, -1, None, "更多食谱")
 
-
         self.DoLayout()
         self.BindEvents()
 
@@ -724,10 +723,10 @@ class FeaturedRecipes(wx.Panel):
         frameSizer.Add(self.mainPanel, 1, wx.EXPAND)
         self.SetSizer(frameSizer)
         frameSizer.Layout()
+
     def BindEvents(self):
         self.m_comboBox1.Bind(wx.EVT_COMBOBOX, self.OnChooseRecipes)
         self.more_button.Bind(wx.EVT_BUTTON, self.OnAButton)
-
 
     def OnChooseRecipes(self,eve):
         name = str(self.m_comboBox1.GetValue())
@@ -762,27 +761,27 @@ class OnRecipesSearch(wx.Panel):
         self.SetSizer(self.searchsizer)
         self.searchsizer.Layout()
 
-        self.sizer = wx.FlexGridSizer(cols=5, hgap=15, vgap=15)
+        self.sizer = wx.FlexGridSizer(3, 5, hgap=15, vgap=10)
         example_bmp1 = wx.Bitmap('./bitmaps/椒盐大虾.jpg')
         m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,example_bmp1, wx.DefaultPosition, (180, 120), 0)
-        self.sizer.Add(m_bitmap1, 0, wx.ALL, 5)
+        self.sizer.Add(m_bitmap1, 0, wx.EXPAND, 5)
 
         example_bmp2 = wx.Bitmap('./bitmaps/丸子头.jpg')
         m_bitmap2 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp2, wx.DefaultPosition, (180, 120), 0)
-        self.sizer.Add(m_bitmap2, 0, wx.ALL, 5)
+        self.sizer.Add(m_bitmap2, 0, wx.EXPAND, 5)
 
         example_bmp3 = wx.Bitmap('./bitmaps/千叶豆腐.jpg')
         m_bitmap3 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp3, wx.DefaultPosition, (180, 120), 0)
-        self.sizer.Add(m_bitmap3, 0, wx.ALL, 5)
+        self.sizer.Add(m_bitmap3, 0,wx.EXPAND, 5)
 
         example_bmp4 = wx.Bitmap('./bitmaps/牛排.jpg')
         m_bitmap4 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp4, wx.DefaultPosition, (180, 120), 0)
-        self.sizer.Add(m_bitmap4, 0, wx.ALL, 5)
+        self.sizer.Add(m_bitmap4, 0, wx.EXPAND, 5)
 
         example_bmp5 = wx.Bitmap('./bitmaps/烧卖.jpg')
         example_bmp5.SetSize((180,120))
         m_bitmap5 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp5, wx.DefaultPosition, wx.DefaultSize , 0)
-        self.sizer.Add(m_bitmap5, 0, wx.ALL, 5)
+        self.sizer.Add(m_bitmap5, 0, wx.EXPAND, 5)
 
         self.searchsizer.Add(self.sizer, 0, wx.ALL, 5)
         self.m_searchCtrl1.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearchText)
