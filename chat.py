@@ -84,25 +84,29 @@ class ChatFrame1(wx.Frame):
     def myinit(self):
         self.user="user"
         self.server="server"
+        self.flag=""
+        self.rflag=""
     def setuser(self,str):
         self.user=str
 
     def setserver(self,str):
         self.server=str
-
+    def setflag(self,user,server):
+        self.flag=user+"-"+server
+        self.rflag=server+"-"+user
     def cb1_click(self, event):
-        self.user="user"
+        self.user="王管理"
         self.cb_1.SetValue(True)
         self.cb_2.SetValue(False)
         event.Skip()
 
     def cb2_click(self, event):
-        self.server="server"
+        self.user="刘丹"
         self.cb_2.SetValue(True)
         self.cb_1.SetValue(False)
         event.Skip()
     def myTimerEvent(self):
-        sql = "SELECT id,info,user FROM chatlog where state=0 order by id "
+        sql = "SELECT id,info,user FROM chatlog where state=0 and (flag='%s' or rflag='%s' )order by id "%(self.flag,self.rflag)
         t=self.db.do_sql(sql)
         self.updateChatPanel(t)
     def updateChatPanel(self,tuple):
@@ -124,11 +128,11 @@ class ChatFrame1(wx.Frame):
         event.Skip()
 
     def clear(self, event):
-        sql = "update  chatlog  set state=1 where 1"
+        sql = "update  chatlog  set state=1 where  (flag='%s' or rflag='%s')"%(self.flag,self.rflag)
         self.db.upda_sql(sql)
         event.Skip()
 
     def db_chat_update(self,info,user1):
-        sql="INSERT INTO chatlog  (`info`,`user`) VALUES ('%s','%s')"%(info,user1)
+        sql="INSERT INTO chatlog  (`info`,`user`,`flag`,`rflag`) VALUES ('%s','%s','%s','%s')"%(info,user1,self.flag,self.rflag)
         self.db.upda_sql(sql)
 

@@ -10,7 +10,7 @@ from chat import *
 
 class MyApp(wx.App):
     def OnInit(self):
-        mainwin = MyFrame1(None)
+        mainwin = ChatFrame1(None)
         mainwin.CenterOnParent(wx.BOTH)
         mainwin.Show()
         mainwin.Center(wx.BOTH)

@@ -646,6 +646,7 @@ class DoctorPanel(wx.Panel):
         #     ls.ShowModal()
         #     ls.Destroy()
         cf.setserver(name)
+        cf.setflag(self.operator,name)
         cf.CenterOnParent(wx.BOTH)
         cf.Show()
         cf.Center(wx.BOTH)
@@ -761,27 +762,37 @@ class OnRecipesSearch(wx.Panel):
         self.SetSizer(self.searchsizer)
         self.searchsizer.Layout()
 
-        self.sizer = wx.FlexGridSizer(3, 5, hgap=15, vgap=10)
+        self.sizer = wx.FlexGridSizer(1, 5, hgap=15, vgap=10)
+        # self.subsizer1=wx.FlexGridSizer(3, 1, hgap=15, vgap=10)
         example_bmp1 = wx.Bitmap('./bitmaps/椒盐大虾.jpg')
-        m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,example_bmp1, wx.DefaultPosition, (180, 120), 0)
+        m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,example_bmp1, wx.DefaultPosition, wx.DefaultSize, 0)
+        # self.subsizer1.Add(m_bitmap1, 0, wx.ALL, 5)
+        # name1=wx.StaticText(self, -1, "555").SetBackgroundColour('Yellow')
+        # self.subsizer1.Add(name1, 0, wx.ALL, 5)
+        # name1=wx.StaticText(self, -1, "align center").SetBackgroundColour('Yellow')
+        # self.subsizer1.Add(name1, 0, wx.EXPAND, 5)
+
         self.sizer.Add(m_bitmap1, 0, wx.EXPAND, 5)
 
         example_bmp2 = wx.Bitmap('./bitmaps/丸子头.jpg')
-        m_bitmap2 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp2, wx.DefaultPosition, (180, 120), 0)
+        m_bitmap2 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp2, wx.DefaultPosition,wx.DefaultSize, 0)
         self.sizer.Add(m_bitmap2, 0, wx.EXPAND, 5)
 
         example_bmp3 = wx.Bitmap('./bitmaps/千叶豆腐.jpg')
-        m_bitmap3 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp3, wx.DefaultPosition, (180, 120), 0)
+        m_bitmap3 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp3, wx.DefaultPosition, wx.DefaultSize, 0)
         self.sizer.Add(m_bitmap3, 0,wx.EXPAND, 5)
 
         example_bmp4 = wx.Bitmap('./bitmaps/牛排.jpg')
-        m_bitmap4 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp4, wx.DefaultPosition, (180, 120), 0)
+        m_bitmap4 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp4, wx.DefaultPosition, wx.DefaultSize, 0)
         self.sizer.Add(m_bitmap4, 0, wx.EXPAND, 5)
 
         example_bmp5 = wx.Bitmap('./bitmaps/烧卖.jpg')
         example_bmp5.SetSize((180,120))
         m_bitmap5 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp5, wx.DefaultPosition, wx.DefaultSize , 0)
         self.sizer.Add(m_bitmap5, 0, wx.EXPAND, 5)
+
+        #第二行 菜谱名称
+        # self.sizer.Add(name1, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, 5)
 
         self.searchsizer.Add(self.sizer, 0, wx.ALL, 5)
         self.m_searchCtrl1.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearchText)
