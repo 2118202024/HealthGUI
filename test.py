@@ -68,6 +68,9 @@ MENU_CUT = 10015
 MENU_PASTE = 10016
 MENU_HELP=10017
 
+MANAGER_ID=1
+USER_ID=5
+DOCTOR_ID=10
 
 # def invert_dict(d):
 #     return dict([(v, k) for (k, v) in d.items()])
@@ -224,19 +227,30 @@ class FlatMenuDemo(wx.Frame):
 
         self._mgr.AddPane(self.CreateNotebook(), AuiPaneInfo().Name("main_panel").Top().
                           CenterPane())
+        if self.id_num==USER_ID:
+            self._mgr.AddPane(DoctorPanel(self, self.operator,self.doctor_info), AuiPaneInfo().Name("医师信息").
+                              Caption("医师信息").Right().CloseButton(False).MaximizeButton(False).MinimizeButton(True).
+                              MinSize(wx.Size(300, 150)))
+            self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("test8").Caption("更多健康食谱文章").
+                              Bottom().Right().CloseButton(False).MaximizeButton(True).
+                              MinimizeButton(True).MinSize(wx.Size(300, 150)))
+        elif self.id_num==MANAGER_ID:
+            print('管理员')
+        elif self.id_num == DOCTOR_ID:
+            print('医生')
+            self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("user_info").Caption("用户交流窗口").
+                              Bottom().Right().CloseButton(False).MaximizeButton(True).
+                              MinimizeButton(True).MinSize(wx.Size(300, 100)))
+        else:
+            print(self.id_num)
 
-        self._mgr.AddPane(DoctorPanel(self, self.operator), AuiPaneInfo().Name("医师信息").
-                          Caption("医师信息").Right().CloseButton(False).MaximizeButton(False).MinimizeButton(True).
-                          MinSize(wx.Size(300, 100)))
 
         self._mgr.AddPane(FeaturedRecipes(self), AuiPaneInfo().
                           Name("thirdauto").Caption("特色食谱").
-                          Bottom().MinimizeButton(True).MinSize(wx.Size(800, 250)),
+                          Bottom().MinimizeButton(True).MinSize(wx.Size(800, 200)),
                           target=self._mgr.GetPane("autonotebook"))
 
-        self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("test8").Caption("更多健康食谱文章").
-                          Bottom().Right().CloseButton(False).MaximizeButton(True).
-                          MinimizeButton(True).MinSize(wx.Size(300, 100)))
+
 
         self._mb.PositionAUI(self._mgr)
         self._mgr.Update()
@@ -299,13 +313,34 @@ class FlatMenuDemo(wx.Frame):
         event.Skip()
 
     def GetUserInfo(self):
-        sql = "SELECT `password`,`name` FROM `user_info` WHERE 1 "
-        result = db.do_sql(sql)
-        user_inform=dict(result)
-        return user_inform
+        sql = "SELECT `password`,`name`,`id_state`,`gender`,`major`,`score` FROM `user_info` WHERE 1 "
+        result_all = db.do_sql(sql)
+        paw_info = []
+        id_info=[]
+        doctor_info=[]
+        for name in result_all:
+            paw_temp=[]
+            paw_temp.append(name[0])
+            paw_temp.append(name[1])
+            paw_info.append(paw_temp)
+            id_temp = []
+            id_temp.append(name[1])
+            id_temp.append(name[2])
+            id_info.append(id_temp)
+            doc_tem=[]
+            if name[2]==DOCTOR_ID:
+                doc_tem.append(name[1])
+                doc_tem.append(name[3])
+                doc_tem.append(name[4])
+                doc_tem.append(name[5])
+                doctor_info.append(doc_tem)
+
+        user_inform=dict(paw_info)
+        id_inform=dict(id_info)
+        return user_inform,id_inform,doctor_info
 
     def Onlogin(self, event):
-        staff_inform = self.GetUserInfo()
+        staff_inform ,name_id_info,doctor_all_info= self.GetUserInfo()
         dlg = wx.PasswordEntryDialog(self, '请输入系统管理员密码：', '系统登录')
         dlg.SetValue("")
         if dlg.ShowModal() == wx.ID_OK:
@@ -315,10 +350,12 @@ class FlatMenuDemo(wx.Frame):
                 if password == "hello8031":
                     staff_name="超级用户"
                     self.statusbar.SetStatusText(u"操作员：" + staff_name,2)
+                    id=5
                 else:
                     staff_name = staff_inform[password]
                     self.statusbar.SetStatusText(u"操作员：" + staff_name,2)
-                self.SetOperator(staff_name)
+                    id=name_id_info[staff_name]
+                self.SetOperator(staff_name,id,doctor_all_info)
                 self.DoNewLayout()
                 # self._mgr.Update()
             else:
@@ -545,112 +582,63 @@ class FlatMenuDemo(wx.Frame):
 
         return ctrl
 
-    def SetOperator(self,name):
+    def SetOperator(self,name,id,doctor_info):
         self.operator=name
+        self.id_num=id
+        self.doctor_info=doctor_info
 
 
 class DoctorPanel(wx.Panel):
-    def __init__(self, parent,operator):
+    def __init__(self, parent,operator,doctor_info):
         self.operator=operator
+        self.doctor_info=doctor_info
         wx.Panel.__init__(self, parent, -1)
+        self.mainPanel = wx.Panel(self)
+        self.mainPanel.SetBackgroundColour(wx.BLUE)
 
-        docsizer = wx.BoxSizer(wx.VERTICAL)
-        h_sizer1=wx.BoxSizer()
-        self.d_name1 = wx.TextCtrl(self,wx.ID_ANY, '刘丹', wx.DefaultPosition, wx.Size( 60,20 ), wx.TE_READONLY)
-        h_sizer1.Add(self.d_name1, 0, wx.EXPAND | wx.ALL, 3)
-        major = wx.TextCtrl(self,wx.ID_ANY, '中药学', wx.DefaultPosition, wx.Size( 60,20 ), wx.TE_READONLY)
-        h_sizer1.Add(major, 0, wx.EXPAND | wx.ALL, 3)
-        t_gender = wx.TextCtrl(self,wx.ID_ANY, '女', wx.DefaultPosition, wx.Size( 35,20 ), wx.TE_READONLY)
-        h_sizer1.Add(t_gender, 0, wx.EXPAND | wx.ALL, 3)
-        self.c_btn1 = wx.Button(self, 10001, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
-        h_sizer1.Add(self.c_btn1, 0, wx.EXPAND | wx.ALL, 2)
-        docsizer.Add(h_sizer1, 0, wx.EXPAND | wx.ALL, 3)
-        #---
-        h_sizer2 = wx.BoxSizer()
-        self.d_name2 = wx.TextCtrl(self, wx.ID_ANY,'王辉', wx.DefaultPosition, wx.Size(60, 20),
-                                   wx.TE_READONLY)
-        h_sizer2.Add(self.d_name2, 0, wx.EXPAND | wx.ALL, 3)
-        major = wx.TextCtrl(self, wx.ID_ANY, '中药学', wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
-        h_sizer2.Add(major, 0, wx.EXPAND | wx.ALL, 3)
-        t_gender = wx.TextCtrl(self, wx.ID_ANY, '男', wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
-        h_sizer2.Add(t_gender, 0, wx.EXPAND | wx.ALL, 3)
-        self.c_btn2 = wx.Button(self, 10002, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
-        h_sizer2.Add(self.c_btn2, 0, wx.EXPAND | wx.ALL, 2)
-        docsizer.Add(h_sizer2, 0, wx.EXPAND | wx.ALL, 3)
-        #------
-        h_sizer3 = wx.BoxSizer()
-        self.d_name3 = wx.TextCtrl(self, wx.ID_ANY, '赵文斌', wx.DefaultPosition, wx.Size(60, 20),
-                                   wx.TE_READONLY)
-        h_sizer3.Add(self.d_name3, 0, wx.EXPAND | wx.ALL, 3)
-        major = wx.TextCtrl(self, wx.ID_ANY, '中药学', wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
-        h_sizer3.Add(major, 0, wx.EXPAND | wx.ALL, 3)
-        t_gender = wx.TextCtrl(self, wx.ID_ANY, '男', wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
-        h_sizer3.Add(t_gender, 0, wx.EXPAND | wx.ALL, 3)
-        self.c_btn3 = wx.Button(self, 10003, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
-        h_sizer3.Add(self.c_btn3, 0, wx.EXPAND | wx.ALL, 2)
-        docsizer.Add(h_sizer3, 0, wx.EXPAND | wx.ALL, 3)
+        self.DoLayOut()
 
-        #-----
-        h_sizer4 = wx.BoxSizer()
-        self.d_name4 = wx.TextCtrl(self, wx.ID_ANY,'王月', wx.DefaultPosition, wx.Size(60, 20),
-                                   wx.TE_READONLY)
-        h_sizer4.Add(self.d_name4, 0, wx.EXPAND | wx.ALL, 3)
-        major = wx.TextCtrl(self, wx.ID_ANY,'中药学', wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
-        h_sizer4.Add(major, 0, wx.EXPAND | wx.ALL, 3)
-        t_gender = wx.TextCtrl(self, wx.ID_ANY, '女', wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
-        h_sizer4.Add(t_gender, 0, wx.EXPAND | wx.ALL, 3)
-        self.c_btn4 = wx.Button(self, 10004, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
-        h_sizer4.Add(self.c_btn4, 0, wx.EXPAND | wx.ALL, 2)
-        docsizer.Add(h_sizer4, 0, wx.EXPAND | wx.ALL, 3)
-        #---
-        h_sizer5 = wx.BoxSizer()
-        self.d_name5 = wx.TextCtrl(self, wx.ID_ANY, '马医生', wx.DefaultPosition, wx.Size(60, 20),
-                                   wx.TE_READONLY)
-        h_sizer5.Add(self.d_name5, 0, wx.EXPAND | wx.ALL, 3)
-        major = wx.TextCtrl(self, wx.ID_ANY, '中药学', wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
-        h_sizer5.Add(major, 0, wx.EXPAND | wx.ALL, 3)
-        t_gender = wx.TextCtrl(self, wx.ID_ANY, '男', wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
-        h_sizer5.Add(t_gender, 0, wx.EXPAND | wx.ALL, 3)
-        self.c_btn5 = wx.Button(self, 10005, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
-        h_sizer5.Add(self.c_btn5, 0, wx.EXPAND | wx.ALL, 2)
-        docsizer.Add(h_sizer5, 0, wx.EXPAND | wx.ALL, 3)
-
-        self.SetSizer(docsizer)
-        docsizer.Layout()
-
-        self.Bind(wx.EVT_BUTTON, self.OnButton, self.c_btn1)
-        self.Bind(wx.EVT_BUTTON, self.OnButton, self.c_btn2)
-        self.Bind(wx.EVT_BUTTON, self.OnButton, self.c_btn3)
-        self.Bind(wx.EVT_BUTTON, self.OnButton, self.c_btn4)
-        self.Bind(wx.EVT_BUTTON, self.OnButton, self.c_btn5)
 
     def OnButton(self,eve):
         id=eve.GetId()
-        name=''
-        if id==10001:
-            name=self.d_name1.GetValue()
-        elif id==10002:
-            name = self.d_name2.GetValue()
-        elif id==10003:
-            name = self.d_name3.GetValue()
-        elif id==10004:
-            name = self.d_name4.GetValue()
-        elif id==10005:
-            name = self.d_name5.GetValue()
-
+        name = "doctor_name_" + str(id)
+        t = wx.FindWindowByName(name=name)
+        name = t.GetValue()
         cf = ChatFrame1(None)
         cf.setuser(self.operator)
-        # if self.operator=='未登录':
-        #     ls = wx.MessageDialog(self, "抱歉！与" + str(name) + "的对话链接暂时无法打开，请登录后再试", "未登录警告",
-        #                                                 wx.OK | wx.ICON_INFORMATION)
-        #     ls.ShowModal()
-        #     ls.Destroy()
         cf.setserver(name)
         cf.setflag(self.operator,name)
         cf.CenterOnParent(wx.BOTH)
         cf.Show()
         cf.Center(wx.BOTH)
         eve.Skip()
+
+    def DoLayOut(self):
+        MyID = 10000
+        frameSizer = wx.BoxSizer(wx.VERTICAL)
+        docsizer = wx.BoxSizer(wx.VERTICAL)
+        self.mainPanel.SetSizer(docsizer)
+
+        for i in range(len(self.doctor_info)):
+            MyID += 1
+            sizername = wx.BoxSizer()
+            namename = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][0], wx.DefaultPosition, wx.Size(60, 20),
+                                       wx.TE_READONLY,name="doctor_name_"+str(MyID))
+            sizername.Add(namename, 0, wx.EXPAND | wx.ALL, 3)
+            majorname = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][2], wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
+            sizername.Add(majorname, 0, wx.EXPAND | wx.ALL, 3)
+            scorename = wx.TextCtrl(self.mainPanel, wx.ID_ANY,self.doctor_info[i][3], wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
+            sizername.Add(scorename, 0, wx.EXPAND | wx.ALL, 3)
+            btmname = wx.Button(self.mainPanel, MyID, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
+            self.Bind(wx.EVT_BUTTON, self.OnButton, btmname)
+            sizername.Add(btmname, 0, wx.EXPAND | wx.ALL, 2)
+            docsizer.Add(sizername, 0, wx.EXPAND | wx.ALL, 3)
+
+            docsizer.Layout()
+        frameSizer.Add(self.mainPanel, 1, wx.EXPAND)
+        self.SetSizer(frameSizer)
+        frameSizer.Layout()
+
 
 class FeaturedRecipes(wx.Panel):
     def __init__(self, parent):
@@ -763,27 +751,21 @@ class OnRecipesSearch(wx.Panel):
         self.searchsizer.Layout()
 
         self.sizer = wx.FlexGridSizer(1, 5, hgap=15, vgap=10)
-        # self.subsizer1=wx.FlexGridSizer(3, 1, hgap=15, vgap=10)
+        # self.subsizer1=wx.Sizer()
         example_bmp1 = wx.Bitmap('./bitmaps/椒盐大虾.jpg')
-        m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,example_bmp1, wx.DefaultPosition, wx.DefaultSize, 0)
-        # self.subsizer1.Add(m_bitmap1, 0, wx.ALL, 5)
-        # name1=wx.StaticText(self, -1, "555").SetBackgroundColour('Yellow')
-        # self.subsizer1.Add(name1, 0, wx.ALL, 5)
-        # name1=wx.StaticText(self, -1, "align center").SetBackgroundColour('Yellow')
-        # self.subsizer1.Add(name1, 0, wx.EXPAND, 5)
-
+        m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,example_bmp1, wx.DefaultPosition, (180, 120), 0)
         self.sizer.Add(m_bitmap1, 0, wx.EXPAND, 5)
 
-        example_bmp2 = wx.Bitmap('./bitmaps/丸子头.jpg')
-        m_bitmap2 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp2, wx.DefaultPosition,wx.DefaultSize, 0)
+        example_bmp2 = wx.Bitmap('./img/丸子头.jpg')
+        m_bitmap2 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp2, wx.DefaultPosition, (180, 120), 0)
         self.sizer.Add(m_bitmap2, 0, wx.EXPAND, 5)
 
         example_bmp3 = wx.Bitmap('./bitmaps/千叶豆腐.jpg')
-        m_bitmap3 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp3, wx.DefaultPosition, wx.DefaultSize, 0)
+        m_bitmap3 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp3, wx.DefaultPosition, (180, 120), 0)
         self.sizer.Add(m_bitmap3, 0,wx.EXPAND, 5)
 
         example_bmp4 = wx.Bitmap('./bitmaps/牛排.jpg')
-        m_bitmap4 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp4, wx.DefaultPosition, wx.DefaultSize, 0)
+        m_bitmap4 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp4, wx.DefaultPosition, (180, 120), 0)
         self.sizer.Add(m_bitmap4, 0, wx.EXPAND, 5)
 
         example_bmp5 = wx.Bitmap('./bitmaps/烧卖.jpg')
@@ -816,8 +798,9 @@ class OnRecipesSearch(wx.Panel):
                 road = os.path.exists('./bitmaps/%s.jpg'%result[i][1])
                 if road:
                     bmp = wx.Bitmap('./bitmaps/%s.jpg'%result[i][1])
+                    bmp.SetSize((120,120))
                     self.m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,
-                                                 bmp, wx.DefaultPosition, (150,120), 0)
+                                                 bmp, wx.DefaultPosition,wx.DefaultSize, 0)
                     self.sizer.Add(self.m_bitmap1, 0, wx.ALL, 5)
                 else:
                     print('不存在')
