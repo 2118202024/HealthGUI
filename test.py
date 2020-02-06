@@ -752,6 +752,7 @@ class OnRecipesSearch(wx.Panel):
 
         self.sizer = wx.FlexGridSizer(1, 5, hgap=15, vgap=10)
         # self.subsizer1=wx.Sizer()
+
         example_bmp1 = wx.Bitmap('./bitmaps/椒盐大虾.jpg')
         m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,example_bmp1, wx.DefaultPosition, (180, 120), 0)
         self.sizer.Add(m_bitmap1, 0, wx.EXPAND, 5)
