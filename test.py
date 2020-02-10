@@ -98,6 +98,7 @@ def CreateBackgroundBitmap():
     mem_dc.SelectObject(wx.NullBitmap)
     return bmp
 
+
 class FM_MyRenderer(FM.FMRenderer):
     """ My custom style. """
 
@@ -163,6 +164,7 @@ class FM_MyRenderer(FM.FMRenderer):
         dc.SetBrush(wx.Brush(startColour))
         dc.DrawRectangle(0, 0, rect.GetWidth(), rect.GetHeight())
 
+
 class FlatMenuDemo(wx.Frame):
 
     def __init__(self, parent, id=wx.ID_ANY, title="", pos=wx.DefaultPosition,
@@ -224,7 +226,6 @@ class FlatMenuDemo(wx.Frame):
         helpMenu.AppendItem(item)
         self._mb.Append(helpMenu, "&管理")
 
-
         self._mgr.AddPane(self.CreateNotebook(), AuiPaneInfo().Name("main_panel").Top().
                           CenterPane())
         if self.id_num==USER_ID:
@@ -236,6 +237,9 @@ class FlatMenuDemo(wx.Frame):
                               MinimizeButton(True).MinSize(wx.Size(300, 150)))
         elif self.id_num==MANAGER_ID:
             print('管理员')
+            self._mgr.AddPane(MangerInfoPanel(self, self.operator, self.doctor_info), AuiPaneInfo().Name("医师信息").
+                              Caption("医师信息").Right().CloseButton(False).MaximizeButton(False).MinimizeButton(True).
+                              MinSize(wx.Size(300, 150)))
         elif self.id_num == DOCTOR_ID:
             print('医生')
             self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("user_info").Caption("用户交流窗口").
@@ -588,6 +592,58 @@ class FlatMenuDemo(wx.Frame):
         self.doctor_info=doctor_info
 
 
+class MangerInfoPanel(wx.Panel):
+    def __init__(self, parent,operator,doctor_info):
+        self.operator=operator
+        self.doctor_info=doctor_info
+        wx.Panel.__init__(self, parent, -1)
+        self.mainPanel = wx.Panel(self)
+        self.mainPanel.SetBackgroundColour(wx.BLUE)
+
+        self.DoLayOut()
+
+
+    def OnButton(self,eve):
+        id=eve.GetId()
+        name = "doctor_name_" + str(id)
+        t = wx.FindWindowByName(name=name)
+        name = t.GetValue()
+        cf = ChatFrame1(None, wx.ID_ANY,'', size=wx.Size(850, 500),style=wx.CAPTION|wx.CLOSE_BOX)
+        cf.setuser(self.operator)
+        cf.setserver(name)
+        cf.setflag(self.operator,name)
+        cf.CenterOnParent(wx.BOTH)
+        cf.Show()
+        cf.Center(wx.BOTH)
+        eve.Skip()
+
+    def DoLayOut(self):
+        MyID = 10000
+        frameSizer = wx.BoxSizer(wx.VERTICAL)
+        docsizer = wx.BoxSizer(wx.VERTICAL)
+        self.mainPanel.SetSizer(docsizer)
+
+        for i in range(len(self.doctor_info)):
+            MyID += 1
+            sizername = wx.BoxSizer()
+            namename = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][0], wx.DefaultPosition, wx.Size(60, 20),
+                                       wx.TE_READONLY,name="doctor_name_"+str(MyID))
+            sizername.Add(namename, 0, wx.EXPAND | wx.ALL, 3)
+            majorname = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][2], wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
+            sizername.Add(majorname, 0, wx.EXPAND | wx.ALL, 3)
+            scorename = wx.TextCtrl(self.mainPanel, wx.ID_ANY,self.doctor_info[i][3], wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
+            sizername.Add(scorename, 0, wx.EXPAND | wx.ALL, 3)
+            btmname = wx.Button(self.mainPanel, MyID, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
+            self.Bind(wx.EVT_BUTTON, self.OnButton, btmname)
+            sizername.Add(btmname, 0, wx.EXPAND | wx.ALL, 2)
+            docsizer.Add(sizername, 0, wx.EXPAND | wx.ALL, 3)
+
+            docsizer.Layout()
+        frameSizer.Add(self.mainPanel, 1, wx.EXPAND)
+        self.SetSizer(frameSizer)
+        frameSizer.Layout()
+
+
 class DoctorPanel(wx.Panel):
     def __init__(self, parent,operator,doctor_info):
         self.operator=operator
@@ -719,6 +775,7 @@ class FeaturedRecipes(wx.Panel):
         print("2")
         eve.Skip()
 
+
 class OnRecipesSearch(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -736,31 +793,22 @@ class OnRecipesSearch(wx.Panel):
         self.searchsizer.Layout()
 
         self.sizer = wx.FlexGridSizer(1, 5, hgap=15, vgap=10)
-        # self.subsizer1=wx.Sizer()
+        for x in range(5):
+            bSizer1 = wx.BoxSizer(wx.VERTICAL)
+            example_bmp1 = wx.Bitmap('./img/null.jpg')
+            name="RecipesBitmap"+str(x)
+            m_bitmap1 = wx.StaticBitmap(self,  wx.ID_ANY,example_bmp1, wx.DefaultPosition, (180, 120),0,name)
+            bSizer1.Add(m_bitmap1, 0, wx.ALL, 5)
+            name = "RecipesName" + str(x)
+            m_staticText1 = wx.StaticText(self, wx.ID_ANY, u"", wx.DefaultPosition, wx.DefaultSize,0,name)
+            m_staticText1.Wrap(1)
 
-        example_bmp1 = wx.Bitmap('./img/椒盐大虾.jpg')
-        m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,example_bmp1, wx.DefaultPosition, (180, 120), 0)
-        self.sizer.Add(m_bitmap1, 0, wx.EXPAND, 5)
-
-        example_bmp2 = wx.Bitmap('./img/丸子头.jpg')
-        m_bitmap2 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp2, wx.DefaultPosition, (180, 120), 0)
-        self.sizer.Add(m_bitmap2, 0, wx.EXPAND, 5)
-
-        example_bmp3 = wx.Bitmap('./img/千叶豆腐.jpg')
-        m_bitmap3 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp3, wx.DefaultPosition, (180, 120), 0)
-        self.sizer.Add(m_bitmap3, 0,wx.EXPAND, 5)
-
-        example_bmp4 = wx.Bitmap('./img/牛排.jpg')
-        m_bitmap4 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp4, wx.DefaultPosition, (180, 120), 0)
-        self.sizer.Add(m_bitmap4, 0, wx.EXPAND, 5)
-
-        example_bmp5 = wx.Bitmap('./img/烧卖.jpg')
-        example_bmp5.SetSize((180,120))
-        m_bitmap5 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp5, wx.DefaultPosition,  (180, 120), 0)
-        self.sizer.Add(m_bitmap5, 0, wx.EXPAND, 5)
-
-        #第二行 菜谱名称
-        # self.sizer.Add(name1, 0, wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, 5)
+            name = "RecipesSatisfaction" + str(x)
+            bSizer1.Add(m_staticText1, 0, wx.ALL, 5)
+            m_staticText2 = wx.StaticText(self, wx.ID_ANY, u"", wx.DefaultPosition, wx.DefaultSize,0,name)
+            m_staticText2.Wrap(1)
+            bSizer1.Add(m_staticText2, 0, wx.ALL, 5)
+            self.sizer.Add(bSizer1, 0, wx.EXPAND, 5)
 
         self.searchsizer.Add(self.sizer, 0, wx.ALL, 5)
         self.m_searchCtrl1.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearchText)
@@ -768,30 +816,58 @@ class OnRecipesSearch(wx.Panel):
     def OnSearchText(self, eve):
         name=self.m_searchCtrl1.GetValue()
         try:
-            sql="SELECT `details`,`recipe_name` FROM `recipe_details` WHERE `recipe_name` like '%%%s%%' "%name
+            sql="SELECT `details`,`recipe_name`,`Satisfaction` FROM `recipe_details` WHERE `recipe_name` like '%%%s%%' "%name
             result=db.do_sql(sql)
         except:
             result=[]
-            # return False
         maxlen=len(result)
         if maxlen==0:
-            pass
-            # str1 = wx.StaticText(self, wx.ID_ANY, u"暂无推荐食谱，请重新输入", wx.DefaultPosition, wx.DefaultSize, 0 )
-            # self.sizer.Add(str1, 0, wx.ALL, 5)
+            dlg = wx.MessageDialog(None, u'该菜谱不存在，请重新输入', '错误', wx.YES_DEFAULT)
+            retCode = dlg.ShowModal()
+            if (retCode == wx.ID_YES):
+                pass
+            else:
+                pass
         elif maxlen>0:
-            self.sizer.Clear()
+            self.sizerClear()
             for i in range(maxlen):
                 road = os.path.exists('./img/%s.jpg'%result[i][1])
                 if road:
                     bmp = wx.Bitmap('./img/%s.jpg'%result[i][1])
-                    # bmp.SetSize((180,120))
-                    self.bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,
-                                                 bmp, wx.DefaultPosition, (180, 120), 0)
-                    self.sizer.Add(self.bitmap1, 0, wx.ALL, 5)
+                    # 图片
+                    name = "RecipesBitmap" + str(i)
+                    RecipesBitmap = wx.FindWindowByName(name=name)
+                    RecipesBitmap.SetBitmap(bmp)
+                    RecipesBitmap.SetToolTip(result[i][0])
+                    # 菜名
+                    name = "RecipesName" + str(i)
+                    RecipesName = wx.FindWindowByName(name=name)
+                    RecipesName.LabelText=result[i][1]
+                    # 满意度
+                    name = "RecipesSatisfaction" + str(i)
+                    RecipesSatisfaction = wx.FindWindowByName(name=name)
+                    RecipesSatisfaction.LabelText = u"满意度："+str(result[i][2])
                 else:
                     print('不存在')
         self.searchsizer.Layout()
         eve.Skip()
+
+    def sizerClear(self):
+        # 容器初始化，每次上图的时候调用
+        for x in range(5):
+            bmp = wx.Bitmap('./img/null.jpg')
+            # 图片
+            name = "RecipesBitmap" + str(x)
+            RecipesBitmap = wx.FindWindowByName(name=name)
+            RecipesBitmap.SetBitmap(bmp)
+            # 菜名
+            name = "RecipesName" + str(x)
+            RecipesName = wx.FindWindowByName(name=name)
+            RecipesName.LabelText = ""
+            # 满意度
+            name = "RecipesSatisfaction" + str(x)
+            RecipesSatisfaction = wx.FindWindowByName(name=name)
+            RecipesSatisfaction.LabelText =""
 
 
 class OnDiseaseSearch(wx.Panel):
@@ -871,6 +947,7 @@ class FormDialog(sc.SizedDialog):
         # less screen space than the controls need
         self.Fit()
         self.SetMinSize(self.GetSize())
+
 
 class MyApp(wx.App):
     def OnInit(self):
