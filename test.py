@@ -226,9 +226,9 @@ class FlatMenuDemo(wx.Frame):
         helpMenu.AppendItem(item)
         self._mb.Append(helpMenu, "&管理")
 
-        self._mgr.AddPane(self.CreateNotebook(), AuiPaneInfo().Name("main_panel").Top().
-                          CenterPane())
         if self.id_num==USER_ID:
+            self._mgr.AddPane(self.CreateNotebook(), AuiPaneInfo().Name("main_panel").Top().
+                              CenterPane())
             self._mgr.AddPane(DoctorPanel(self, self.operator,self.doctor_info), AuiPaneInfo().Name("医师信息").
                               Caption("医师信息").Right().CloseButton(False).MaximizeButton(False).MinimizeButton(True).
                               MinSize(wx.Size(300, 150)))
@@ -242,9 +242,12 @@ class FlatMenuDemo(wx.Frame):
                               MinSize(wx.Size(300, 150)))
         elif self.id_num == DOCTOR_ID:
             print('医生')
+            self._mgr.AddPane(ChatUserInfoPanel(self, self.operator), AuiPaneInfo().Name("main_panel").Top().
+                              CenterPane())
+
             self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("user_info").Caption("用户交流窗口").
                               Bottom().Right().CloseButton(False).MaximizeButton(True).
-                              MinimizeButton(True).MinSize(wx.Size(300, 100)))
+                              MinimizeButton(True).MinSize(wx.Size(400, 200)))
         else:
             print(self.id_num)
 
@@ -592,17 +595,16 @@ class FlatMenuDemo(wx.Frame):
         self.doctor_info=doctor_info
 
 
-class MangerInfoPanel(wx.Panel):
-    def __init__(self, parent,operator,doctor_info):
+class ChatUserInfoPanel(wx.Panel):
+    def __init__(self, parent,operator):
         self.operator=operator
-        self.doctor_info=doctor_info
         wx.Panel.__init__(self, parent, -1)
         self.mainPanel = wx.Panel(self)
         self.mainPanel.SetBackgroundColour(wx.BLUE)
 
         self.DoLayOut()
 
-
+        self.ReadChatInfo()
     def OnButton(self,eve):
         id=eve.GetId()
         name = "doctor_name_" + str(id)
@@ -623,13 +625,81 @@ class MangerInfoPanel(wx.Panel):
         docsizer = wx.BoxSizer(wx.VERTICAL)
         self.mainPanel.SetSizer(docsizer)
 
+        for i in range(3):
+            MyID += 1
+            sizername = wx.BoxSizer()
+            namename = wx.TextCtrl(self.mainPanel, wx.ID_ANY, str(i), wx.DefaultPosition, wx.Size(60, 20),
+                                       wx.TE_READONLY,name="doctor_name_"+str(MyID))
+            sizername.Add(namename, 0, wx.EXPAND | wx.ALL, 3)
+            majorname = wx.TextCtrl(self.mainPanel, wx.ID_ANY, str(i), wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
+            sizername.Add(majorname, 0, wx.EXPAND | wx.ALL, 3)
+            scorename = wx.TextCtrl(self.mainPanel, wx.ID_ANY,str(i), wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
+            sizername.Add(scorename, 0, wx.EXPAND | wx.ALL, 3)
+            btmname = wx.Button(self.mainPanel, MyID, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
+            self.Bind(wx.EVT_BUTTON, self.OnButton, btmname)
+            sizername.Add(btmname, 0, wx.EXPAND | wx.ALL, 2)
+            docsizer.Add(sizername, 0, wx.EXPAND | wx.ALL, 3)
+
+            docsizer.Layout()
+        frameSizer.Add(self.mainPanel, 1, wx.EXPAND)
+        self.SetSizer(frameSizer)
+        frameSizer.Layout()
+
+    def ReadChatInfo(self):
+        sql = "SELECT `info`,`flag`,`rflag`,`read_state` FROM `chatlog` WHERE 1 "
+        result_all = db.do_sql(sql)
+        different_user_list = []
+        info_num = 1
+        for row in result_all:
+            doctor_info=row[2].split('-')
+            if self.operator == doctor_info[0]:
+                if doctor_info[1] in different_user_list:
+                    info_num+=1
+                else:
+                    different_user_list.append(doctor_info[1])
+
+        print(different_user_list)
+
+
+
+class MangerInfoPanel(wx.Panel):
+    def __init__(self, parent,operator,doctor_info):
+        self.operator=operator
+        self.doctor_info=doctor_info
+        wx.Panel.__init__(self, parent, -1)
+        self.mainPanel = wx.Panel(self)
+        self.mainPanel.SetBackgroundColour(wx.BLUE)
+
+        self.DoLayOut()
+
+
+    def OnButton(self,eve):
+        id=eve.GetId()
+        name = "doctor_name_" + str(id)
+        t = wx.FindWindowByName(name=name)
+        name = t.GetValue()
+        cf = ChatFrame1(None)
+        cf.setuser(self.operator)
+        cf.setserver(name)
+        cf.setflag(self.operator,name)
+        cf.CenterOnParent(wx.BOTH)
+        cf.Show()
+        cf.Center(wx.BOTH)
+        eve.Skip()
+
+    def DoLayOut(self):
+        MyID = 10000
+        frameSizer = wx.BoxSizer(wx.VERTICAL)
+        docsizer = wx.BoxSizer(wx.VERTICAL)
+        self.mainPanel.SetSizer(docsizer)
+
         for i in range(len(self.doctor_info)):
             MyID += 1
             sizername = wx.BoxSizer()
             namename = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][0], wx.DefaultPosition, wx.Size(60, 20),
                                        wx.TE_READONLY,name="doctor_name_"+str(MyID))
             sizername.Add(namename, 0, wx.EXPAND | wx.ALL, 3)
-            majorname = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][2], wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
+            majorname = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][2], wx.DefaultPosition, wx.Size(90, 20), wx.TE_READONLY)
             sizername.Add(majorname, 0, wx.EXPAND | wx.ALL, 3)
             scorename = wx.TextCtrl(self.mainPanel, wx.ID_ANY,self.doctor_info[i][3], wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
             sizername.Add(scorename, 0, wx.EXPAND | wx.ALL, 3)
@@ -681,7 +751,7 @@ class DoctorPanel(wx.Panel):
             namename = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][0], wx.DefaultPosition, wx.Size(60, 20),
                                        wx.TE_READONLY,name="doctor_name_"+str(MyID))
             sizername.Add(namename, 0, wx.EXPAND | wx.ALL, 3)
-            majorname = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][2], wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
+            majorname = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][2], wx.DefaultPosition, wx.Size(90, 20), wx.TE_READONLY)
             sizername.Add(majorname, 0, wx.EXPAND | wx.ALL, 3)
             scorename = wx.TextCtrl(self.mainPanel, wx.ID_ANY,self.doctor_info[i][3], wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
             sizername.Add(scorename, 0, wx.EXPAND | wx.ALL, 3)
@@ -804,10 +874,10 @@ class OnRecipesSearch(wx.Panel):
             m_staticText1.Wrap(1)
 
             name = "RecipesSatisfaction" + str(x)
-            bSizer1.Add(m_staticText1, 0, wx.ALL, 5)
+            bSizer1.Add(m_staticText1, 0, wx.ALIGN_CENTER, 5)
             m_staticText2 = wx.StaticText(self, wx.ID_ANY, u"", wx.DefaultPosition, wx.DefaultSize,0,name)
             m_staticText2.Wrap(1)
-            bSizer1.Add(m_staticText2, 0, wx.ALL, 5)
+            bSizer1.Add(m_staticText2, 0, wx.ALIGN_CENTER, 5)
             self.sizer.Add(bSizer1, 0, wx.EXPAND, 5)
 
         self.searchsizer.Add(self.sizer, 0, wx.ALL, 5)
