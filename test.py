@@ -57,6 +57,8 @@ except ImportError: # if it's not there locally, try the wxPython lib.
 
 from chat import ChatFrame1
 
+import wx.grid
+
 import wx.lib.sized_controls as sc
 db=HCJ_database()
 MENU_NEW_FILE = 10010
@@ -79,7 +81,6 @@ def switchRGBtoBGR(colour):
 
     return wx.Colour(colour.Blue(), colour.Green(), colour.Red())
 
-
 def CreateBackgroundBitmap():
 
     mem_dc = wx.MemoryDC()
@@ -96,7 +97,6 @@ def CreateBackgroundBitmap():
 
     mem_dc.SelectObject(wx.NullBitmap)
     return bmp
-
 
 class FM_MyRenderer(FM.FMRenderer):
     """ My custom style. """
@@ -643,75 +643,46 @@ class DoctorPanel(wx.Panel):
 class FeaturedRecipes(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
-        self.mainPanel = wx.Panel(self)
-        self.mainPanel.SetBackgroundColour(wx.BLUE)
+
+        self.SetBackgroundColour(wx.GREEN)
         m_comboBox1Choices = [u"营养早餐", u"丰盛午餐", u"健康晚餐", u"肌肉食谱", u"孕妇食谱", u"春季食谱", u"夏季食谱", u"秋季食谱", u"冬季食谱"]
-        self.m_comboBox1 = wx.ComboBox(self.mainPanel, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,wx.CB_READONLY)
-        self.more_button = AB.AquaButton(self.mainPanel, -1, None, "更多食谱")
+        self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,wx.CB_READONLY)
+        self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
 
-        self.DoLayout()
+        self.mainSizer = wx.BoxSizer(wx.VERTICAL)
+        topsizer = wx.BoxSizer()
+        self.picSizer = wx.FlexGridSizer(3, 5, 1, 15)
+
+        topsizer.Add(self.m_comboBox1, 7, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 6)
+        topsizer.Add(self.more_button, 3, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+
+        try:
+            sql = "SELECT `recipe_name`,`details`,`Satisfaction` FROM `recipe_details` WHERE `recipe_type`='营养早餐' "
+            result = db.do_sql(sql)
+            for name in result:
+                # print(name[0])
+                self.picSizer.Clear()
+                road = os.path.exists('./img/%s.jpg' % name[0])
+                if road:
+                    bmp = wx.Bitmap('./img/%s.jpg' % name[0])
+                    s_bitmap = wx.StaticBitmap(self, wx.ID_ANY,
+                                                   bmp, wx.DefaultPosition, (180, 120), 0)
+                    self.picSizer.Add(s_bitmap, 0, wx.ALL, 5)
+                    self.picSizer.Add(wx.StaticText(self, -1,name[0]),0, wx.ALIGN_CENTER | wx.TOP, 10)
+                    self.picSizer.Add(wx.StaticText(self, -1,str(name[2])),0, wx.ALIGN_CENTER | wx.TOP, 10)
+                else:
+                    print('不存在')
+        except:
+            print('erro')
+
+        self.mainSizer.Add(topsizer, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
+        self.mainSizer.Add(self.picSizer, 0,  wx.ALIGN_CENTER_VERTICAL)
+
+        self.SetSizer(self.mainSizer)
+        self.mainSizer.Layout()
+
+        # self.DoLayout()
         self.BindEvents()
-
-    def DoLayout(self):
-        frameSizer = wx.BoxSizer(wx.VERTICAL)
-        mainSizer = wx.BoxSizer(wx.VERTICAL)
-        topsizer=wx.BoxSizer()
-        picSizer = wx.FlexGridSizer(3, 5, 1, 15)
-
-        topsizer.Add(self.m_comboBox1, 7, wx.ALL| wx.ALIGN_CENTER_VERTICAL, 6 )
-        topsizer.Add(self.more_button, 3, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
-
-        label1 = wx.StaticText(self.mainPanel, -1, "1 Colour")
-        label2 = wx.StaticText(self.mainPanel, -1, "2 Colour")
-        label3 = wx.StaticText(self.mainPanel, -1, "3 Colour")
-        label4 = wx.StaticText(self.mainPanel, -1, "4 Colour")
-        label5 = wx.StaticText(self.mainPanel, -1, "5 Colour")
-        picSizer.Add(label1, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
-        picSizer.Add(label2, 0, wx.ALIGN_CENTER_VERTICAL)
-
-        picSizer.Add(label3, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
-        picSizer.Add(label4, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
-        picSizer.Add(label5, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
-
-        labelBack = wx.StaticText(self.mainPanel, -1, "Background Colour")
-        labelHover = wx.StaticText(self.mainPanel, -1, "Hover Colour")
-        labelFocus = wx.StaticText(self.mainPanel, -1, "Focus Colour")
-        labelText = wx.StaticText(self.mainPanel, -1, "Text Colour")
-        label6 = wx.StaticText(self.mainPanel, -1, "6 Colour")
-
-        picSizer.Add(labelBack)
-        picSizer.Add(labelHover)
-        picSizer.Add(labelFocus)
-        picSizer.Add(labelText)
-        picSizer.Add(label6)
-
-        label7 = wx.StaticText(self.mainPanel, -1, "7 Colour")
-        label8 = wx.StaticText(self.mainPanel, -1, "8 Colour")
-        label9 = wx.StaticText(self.mainPanel, -1, "9 Colour")
-        label10 = wx.StaticText(self.mainPanel, -1, "10 Colour")
-        label11 = wx.StaticText(self.mainPanel, -1, "11 Colour")
-
-        picSizer.Add(label7)
-        picSizer.Add(label8)
-        picSizer.Add(label9)
-        picSizer.Add(label10)
-        picSizer.Add(label11)
-
-        mainSizer.Add(topsizer, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
-        mainSizer.Add(picSizer, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
-
-        boldFont = wx.SystemSettings.GetFont(wx.SYS_DEFAULT_GUI_FONT)
-        boldFont.SetWeight(wx.FONTWEIGHT_BOLD)
-
-        for child in self.mainPanel.GetChildren():
-            if isinstance(child, wx.StaticText):
-                child.SetFont(boldFont)
-
-        self.mainPanel.SetSizer(mainSizer)
-        mainSizer.Layout()
-        frameSizer.Add(self.mainPanel, 1, wx.EXPAND)
-        self.SetSizer(frameSizer)
-        frameSizer.Layout()
 
     def BindEvents(self):
         self.m_comboBox1.Bind(wx.EVT_COMBOBOX, self.OnChooseRecipes)
@@ -719,14 +690,28 @@ class FeaturedRecipes(wx.Panel):
 
     def OnChooseRecipes(self,eve):
         name = str(self.m_comboBox1.GetValue())
-        #TODO
         try:
-            sql = "SELECT `picture`,`details`,`recipe_name` FROM `recipe_details` WHERE `recipe_type`='%s' " % name
+            sql = "SELECT `recipe_name`,`details`,`Satisfaction` FROM `recipe_details` WHERE `recipe_type`='%s' " % name
             result = db.do_sql(sql)
-            for name in result():
-                print(name[2])
+            for name in result:
+                self.picSizer.Clear()
+                road = os.path.exists('./img/%s.jpg' % name[0])
+                if road:
+                    bmp = wx.Bitmap('./img/%s.jpg' % name[0])
+                    s_bitmap = wx.StaticBitmap(self, wx.ID_ANY,
+                                                   bmp, wx.DefaultPosition, (180, 120), 0)
+                    self.picSizer.Add(s_bitmap, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+                    self.picSizer.Add(wx.StaticText(self, -1, name[0]), 0, wx.ALIGN_CENTER | wx.TOP, 10)
+                    self.picSizer.Add(wx.StaticText(self, -1, str(name[2])), 0, wx.ALIGN_CENTER | wx.TOP, 10)
+                else:
+                    bmp = wx.Bitmap('./img/%s.jpg' % '丸子头')
+                    s_bitmap = wx.StaticBitmap(self, wx.ID_ANY,
+                                               bmp, wx.DefaultPosition, (180, 120), 0)
+                    self.picSizer.Add(s_bitmap, 0, wx.ALIGN_CENTER | wx.ALL, 10)
+                    self.picSizer.Add(wx.StaticText(self, -1, name[0]), 0, wx.ALIGN_CENTER | wx.TOP, 10)
+                    self.picSizer.Add(wx.StaticText(self, -1, str(name[2])), 0, wx.ALIGN_CENTER | wx.TOP, 10)
+            self.mainSizer.Layout()
         except:
-            result = [[]]
             print('erro')
         eve.Skip()
 
@@ -753,7 +738,7 @@ class OnRecipesSearch(wx.Panel):
         self.sizer = wx.FlexGridSizer(1, 5, hgap=15, vgap=10)
         # self.subsizer1=wx.Sizer()
 
-        example_bmp1 = wx.Bitmap('./bitmaps/椒盐大虾.jpg')
+        example_bmp1 = wx.Bitmap('./img/椒盐大虾.jpg')
         m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,example_bmp1, wx.DefaultPosition, (180, 120), 0)
         self.sizer.Add(m_bitmap1, 0, wx.EXPAND, 5)
 
@@ -761,17 +746,17 @@ class OnRecipesSearch(wx.Panel):
         m_bitmap2 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp2, wx.DefaultPosition, (180, 120), 0)
         self.sizer.Add(m_bitmap2, 0, wx.EXPAND, 5)
 
-        example_bmp3 = wx.Bitmap('./bitmaps/千叶豆腐.jpg')
+        example_bmp3 = wx.Bitmap('./img/千叶豆腐.jpg')
         m_bitmap3 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp3, wx.DefaultPosition, (180, 120), 0)
         self.sizer.Add(m_bitmap3, 0,wx.EXPAND, 5)
 
-        example_bmp4 = wx.Bitmap('./bitmaps/牛排.jpg')
+        example_bmp4 = wx.Bitmap('./img/牛排.jpg')
         m_bitmap4 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp4, wx.DefaultPosition, (180, 120), 0)
         self.sizer.Add(m_bitmap4, 0, wx.EXPAND, 5)
 
-        example_bmp5 = wx.Bitmap('./bitmaps/烧卖.jpg')
+        example_bmp5 = wx.Bitmap('./img/烧卖.jpg')
         example_bmp5.SetSize((180,120))
-        m_bitmap5 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp5, wx.DefaultPosition, wx.DefaultSize , 0)
+        m_bitmap5 = wx.StaticBitmap(self, wx.ID_ANY, example_bmp5, wx.DefaultPosition,  (180, 120), 0)
         self.sizer.Add(m_bitmap5, 0, wx.EXPAND, 5)
 
         #第二行 菜谱名称
@@ -780,7 +765,6 @@ class OnRecipesSearch(wx.Panel):
         self.searchsizer.Add(self.sizer, 0, wx.ALL, 5)
         self.m_searchCtrl1.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self.OnSearchText)
 
-    #
     def OnSearchText(self, eve):
         name=self.m_searchCtrl1.GetValue()
         try:
@@ -791,28 +775,24 @@ class OnRecipesSearch(wx.Panel):
             # return False
         maxlen=len(result)
         if maxlen==0:
-            str1 = wx.StaticText(self, wx.ID_ANY, u"暂无推荐食谱，请重新输入", wx.DefaultPosition, wx.DefaultSize, 0 )
-            self.sizer.Add(str1, 0, wx.ALL, 5)
+            pass
+            # str1 = wx.StaticText(self, wx.ID_ANY, u"暂无推荐食谱，请重新输入", wx.DefaultPosition, wx.DefaultSize, 0 )
+            # self.sizer.Add(str1, 0, wx.ALL, 5)
         elif maxlen>0:
             self.sizer.Clear()
             for i in range(maxlen):
-                road = os.path.exists('./bitmaps/%s.jpg'%result[i][1])
+                road = os.path.exists('./img/%s.jpg'%result[i][1])
                 if road:
-                    bmp = wx.Bitmap('./bitmaps/%s.jpg'%result[i][1])
-                    bmp.SetSize((120,120))
-                    self.m_bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,
-                                                 bmp, wx.DefaultPosition,wx.DefaultSize, 0)
-                    self.sizer.Add(self.m_bitmap1, 0, wx.ALL, 5)
+                    bmp = wx.Bitmap('./img/%s.jpg'%result[i][1])
+                    # bmp.SetSize((180,120))
+                    self.bitmap1 = wx.StaticBitmap(self, wx.ID_ANY,
+                                                 bmp, wx.DefaultPosition, (180, 120), 0)
+                    self.sizer.Add(self.bitmap1, 0, wx.ALL, 5)
                 else:
                     print('不存在')
-
-
         self.searchsizer.Layout()
         eve.Skip()
 
-    def Ontest(self,eve):
-        self.sizer.Clear()
-        print(1)
 
 class OnDiseaseSearch(wx.Panel):
     def __init__(self, parent):
