@@ -7,7 +7,7 @@ import base64
 import sys
 
 from HCJ_DB_Helper import HCJ_database
-
+from  RecipesSizer  import *
 try:
     dirName = os.path.dirname(os.path.abspath(__file__))
 except:
@@ -80,6 +80,7 @@ DOCTOR_ID=10
 def switchRGBtoBGR(colour):
 
     return wx.Colour(colour.Blue(), colour.Green(), colour.Red())
+
 
 def CreateBackgroundBitmap():
 
@@ -254,10 +255,8 @@ class FlatMenuDemo(wx.Frame):
 
         self._mgr.AddPane(FeaturedRecipes(self), AuiPaneInfo().
                           Name("thirdauto").Caption("特色食谱").
-                          Bottom().MinimizeButton(True).MinSize(wx.Size(800, 200)),
+                          Bottom().MinimizeButton(True).MinSize(wx.Size(800, 240)),
                           target=self._mgr.GetPane("autonotebook"))
-
-
 
         self._mb.PositionAUI(self._mgr)
         self._mgr.Update()
@@ -604,7 +603,6 @@ class ChatUserInfoPanel(wx.Panel):
 
         self.DoLayOut()
 
-        self.ReadChatInfo()
     def OnButton(self,eve):
         id=eve.GetId()
         name = "doctor_name_" + str(id)
@@ -620,46 +618,55 @@ class ChatUserInfoPanel(wx.Panel):
         eve.Skip()
 
     def DoLayOut(self):
-        MyID = 10000
+        user_list=self.ReadChatInfo()
+        MyID = 11000
         frameSizer = wx.BoxSizer(wx.VERTICAL)
-        docsizer = wx.BoxSizer(wx.VERTICAL)
-        self.mainPanel.SetSizer(docsizer)
+        usersizer = wx.BoxSizer(wx.VERTICAL)
+        self.mainPanel.SetSizer(usersizer)
 
-        for i in range(3):
+        for row in (user_list):
             MyID += 1
             sizername = wx.BoxSizer()
-            namename = wx.TextCtrl(self.mainPanel, wx.ID_ANY, str(i), wx.DefaultPosition, wx.Size(60, 20),
-                                       wx.TE_READONLY,name="doctor_name_"+str(MyID))
+
+            namename = wx.TextCtrl(self.mainPanel, wx.ID_ANY, row[0], wx.DefaultPosition, wx.Size(60, 30),
+                                       wx.TE_READONLY,name="user_name_"+str(MyID))
             sizername.Add(namename, 0, wx.EXPAND | wx.ALL, 3)
-            majorname = wx.TextCtrl(self.mainPanel, wx.ID_ANY, str(i), wx.DefaultPosition, wx.Size(60, 20), wx.TE_READONLY)
+            majorname = wx.TextCtrl(self.mainPanel, wx.ID_ANY, str(row[3]), wx.DefaultPosition, wx.Size(78, 30), wx.TE_READONLY)
             sizername.Add(majorname, 0, wx.EXPAND | wx.ALL, 3)
-            scorename = wx.TextCtrl(self.mainPanel, wx.ID_ANY,str(i), wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
+            scorename = wx.TextCtrl(self.mainPanel, wx.ID_ANY,row[1], wx.DefaultPosition, wx.Size(235, 30), wx.TE_READONLY)
             sizername.Add(scorename, 0, wx.EXPAND | wx.ALL, 3)
             btmname = wx.Button(self.mainPanel, MyID, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
             self.Bind(wx.EVT_BUTTON, self.OnButton, btmname)
             sizername.Add(btmname, 0, wx.EXPAND | wx.ALL, 2)
-            docsizer.Add(sizername, 0, wx.EXPAND | wx.ALL, 3)
+            if row[2] == 0:
+                namename.SetBackgroundColour(wx.YELLOW)
+                majorname.SetBackgroundColour(wx.YELLOW)
+                scorename.SetBackgroundColour(wx.YELLOW)
+            else:
+                namename.SetBackgroundColour(wx.WHITE)
+                majorname.SetBackgroundColour(wx.WHITE)
+                scorename.SetBackgroundColour(wx.WHITE)
+            usersizer.Add(sizername, 0, wx.EXPAND | wx.ALL, 3)
 
-            docsizer.Layout()
+            usersizer.Layout()
         frameSizer.Add(self.mainPanel, 1, wx.EXPAND)
         self.SetSizer(frameSizer)
         frameSizer.Layout()
 
     def ReadChatInfo(self):
-        sql = "SELECT `info`,`flag`,`rflag`,`read_state` FROM `chatlog` WHERE 1 "
+        sql = "SELECT `info`,`flag`,`rflag`,`read_state`,`date` FROM `chatlog` WHERE 1 "
         result_all = db.do_sql(sql)
         different_user_list = []
-        info_num = 1
+        # useful_info=[]
         for row in result_all:
             doctor_info=row[2].split('-')
-            if self.operator == doctor_info[0]:
-                if doctor_info[1] in different_user_list:
-                    info_num+=1
+            if self.operator == doctor_info[0] :
+                # useful_info.append([row[0],doctor_info[1],row[3]])
+                if doctor_info[1] in different_user_list :
+                    pass
                 else:
-                    different_user_list.append(doctor_info[1])
-
-        print(different_user_list)
-
+                    different_user_list.append([doctor_info[1],row[0],row[3],row[4]])
+        return different_user_list
 
 
 class MangerInfoPanel(wx.Panel):
@@ -777,33 +784,21 @@ class FeaturedRecipes(wx.Panel):
 
         self.mainSizer = wx.BoxSizer(wx.VERTICAL)
         topsizer = wx.BoxSizer()
-        self.picSizer = wx.FlexGridSizer(3, 5, 1, 15)
+        self.RecipesSizer=RecipesSizer(self,"FeaturedRecipes")
+        self.picSizer =self.RecipesSizer.getSizer()
 
         topsizer.Add(self.m_comboBox1, 7, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 6)
         topsizer.Add(self.more_button, 3, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-
         try:
-            sql = "SELECT `recipe_name`,`details`,`Satisfaction` FROM `recipe_details` WHERE `recipe_type`='营养早餐' "
+            sql = "SELECT `details`,`recipe_name`,`Satisfaction` FROM `recipe_details` WHERE `recipe_type`='营养早餐' "
             result = db.do_sql(sql)
-            for name in result:
-                # print(name[0])
-                self.picSizer.Clear()
-                road = os.path.exists('./img/%s.jpg' % name[0])
-                if road:
-                    bmp = wx.Bitmap('./img/%s.jpg' % name[0])
-                    s_bitmap = wx.StaticBitmap(self, wx.ID_ANY,
-                                                   bmp, wx.DefaultPosition, (180, 120), 0)
-                    self.picSizer.Add(s_bitmap, 0, wx.ALL, 5)
-                    self.picSizer.Add(wx.StaticText(self, -1,name[0]),0, wx.ALIGN_CENTER | wx.TOP, 10)
-                    self.picSizer.Add(wx.StaticText(self, -1,str(name[2])),0, wx.ALIGN_CENTER | wx.TOP, 10)
-                else:
-                    print('不存在')
+            print(result)
+            self.RecipesSizer.changeSizer(result)
         except:
             print('erro')
 
         self.mainSizer.Add(topsizer, 0, wx.EXPAND | wx.ALIGN_CENTER_VERTICAL)
-        self.mainSizer.Add(self.picSizer, 0,  wx.ALIGN_CENTER_VERTICAL)
-
+        self.mainSizer.Add(self.picSizer, 0, wx.ALIGN_CENTER_VERTICAL)
         self.SetSizer(self.mainSizer)
         self.mainSizer.Layout()
 
@@ -817,25 +812,9 @@ class FeaturedRecipes(wx.Panel):
     def OnChooseRecipes(self,eve):
         name = str(self.m_comboBox1.GetValue())
         try:
-            sql = "SELECT `recipe_name`,`details`,`Satisfaction` FROM `recipe_details` WHERE `recipe_type`='%s' " % name
+            sql = "SELECT `details`,`recipe_name`,`Satisfaction` FROM `recipe_details` WHERE `recipe_type`='%s' " % name
             result = db.do_sql(sql)
-            for name in result:
-                self.picSizer.Clear()
-                road = os.path.exists('./img/%s.jpg' % name[0])
-                if road:
-                    bmp = wx.Bitmap('./img/%s.jpg' % name[0])
-                    s_bitmap = wx.StaticBitmap(self, wx.ID_ANY,
-                                                   bmp, wx.DefaultPosition, (180, 120), 0)
-                    self.picSizer.Add(s_bitmap, 0, wx.ALIGN_CENTER | wx.ALL, 10)
-                    self.picSizer.Add(wx.StaticText(self, -1, name[0]), 0, wx.ALIGN_CENTER | wx.TOP, 10)
-                    self.picSizer.Add(wx.StaticText(self, -1, str(name[2])), 0, wx.ALIGN_CENTER | wx.TOP, 10)
-                else:
-                    bmp = wx.Bitmap('./img/%s.jpg' % '丸子头')
-                    s_bitmap = wx.StaticBitmap(self, wx.ID_ANY,
-                                               bmp, wx.DefaultPosition, (180, 120), 0)
-                    self.picSizer.Add(s_bitmap, 0, wx.ALIGN_CENTER | wx.ALL, 10)
-                    self.picSizer.Add(wx.StaticText(self, -1, name[0]), 0, wx.ALIGN_CENTER | wx.TOP, 10)
-                    self.picSizer.Add(wx.StaticText(self, -1, str(name[2])), 0, wx.ALIGN_CENTER | wx.TOP, 10)
+            self.RecipesSizer.changeSizer(result)
             self.mainSizer.Layout()
         except:
             print('erro')
@@ -952,8 +931,13 @@ class OnDiseaseSearch(wx.Panel):
         sh_sizer1.Add(self.m_comboBox1, 7, wx.ALL, 5)
         self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
         sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
-
         searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
+
+        # 调用菜谱sizer
+        self.RecipesSizer = RecipesSizer(self, "DiseaseRecipes")
+        self.sizer = self.RecipesSizer.getSizer()
+
+        searchsizer.Add(self.sizer, 0, wx.ALL, 5)
 
         self.SetSizer(searchsizer)
         searchsizer.Layout()
@@ -961,12 +945,22 @@ class OnDiseaseSearch(wx.Panel):
     def OnChooseRecipes(self,eve):
         name = self.m_comboBox1.GetValue()
         try:
-            sql="SELECT `picture`,`details`,`recipe_name` FROM `recipe_details` WHERE `recipe_type`='%s' "%name
-            result=db.do_sql(sql)
-            for name in result():
-                print(name[2])
+            sql="SELECT `recipe` FROM `recipe_disease_info` WHERE `disease_name`='%s' "%name
+            result=db.do_sql_one(sql)
+            if len(result)>0:
+                RecipesList=result[0].split(";")
+                RecipesList.remove("")
+                str=""
+                for name in RecipesList:
+                    str=str+"'%s',"%name
+                str=str[:-1]
+                sql = "SELECT `details`,`recipe_name`,`Satisfaction` FROM `recipe_details` WHERE `recipe_name` in (%s) " % str
+                result = db.do_sql(sql)
+                self.RecipesSizer.changeSizer(result)
+
         except:
             result=[[]]
+            print("暂无菜谱")
 
 
 class FormDialog(sc.SizedDialog):
