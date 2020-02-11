@@ -3,7 +3,6 @@ import time
 import wx.html
 import wx
 import os
-import base64
 import sys
 
 from HCJ_DB_Helper import HCJ_database
@@ -1001,7 +1000,6 @@ class OnStateSearch(wx.Panel):
 
         self.SetSizer(searchsizer)
         searchsizer.Layout()
-        # self.m_comboBox1.Bind(wx.EVT_COMBOBOX, self.OnChooseRecipes)
         # 绑定事件
         self.bt_StateSearchOK.Bind(wx.EVT_BUTTON, self.StateSubmit)
 
@@ -1062,6 +1060,7 @@ class OnStateSearch(wx.Panel):
         self.DiseaseStateDict=dict
         self.DiseaseStatelist=list
         return list
+
     def AddCheckBox(self):
         self.getDiseaseStateDict()
         list=self.DiseaseStatelist
@@ -1070,25 +1069,6 @@ class OnStateSearch(wx.Panel):
             CheckBox= wx.CheckBox(self, wx.ID_ANY,list[i],name=name)
 
             self.gSizer1.Add(CheckBox, 0, wx.ALL, 5)
-    def OnChooseRecipes(self,eve):
-        name = self.m_comboBox1.GetValue()
-        try:
-            sql="SELECT `recipe` FROM `recipe_disease_info` WHERE `disease_name`='%s' "%name
-            result=db.do_sql_one(sql)
-            if len(result)>0:
-                RecipesList=result[0].split(";")
-                RecipesList.remove("")
-                str=""
-                for name in RecipesList:
-                    str=str+"'%s',"%name
-                str=str[:-1]
-                sql = "SELECT `details`,`recipe_name`,`Satisfaction` FROM `recipe_details` WHERE `recipe_name` in (%s) " % str
-                result = db.do_sql(sql)
-                self.RecipesSizer.changeSizer(result)
-
-        except:
-            result=[[]]
-            print("暂无菜谱")
 
 
 class FormDialog(sc.SizedDialog):
