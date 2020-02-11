@@ -46,6 +46,13 @@ class ChatFrame1(wx.Frame):
         self.timer.Stop()
 
     def OnClose(self, event):
+        from HCJ_DB_Helper import HCJ_database
+        db = HCJ_database()
+        try:
+            sql = "update `chatlog` set `read_state`=10  WHERE `rflag`='%s' "% self.flag
+            db.upda_sql(sql)
+        except:
+            print('erro')
         self.timer.Stop()
         event.Skip()
 
@@ -67,7 +74,7 @@ class ChatFrame1(wx.Frame):
         self.rflag=server+"-"+user
 
     def myTimerEvent(self):
-        sql = "SELECT id,info,user FROM chatlog where state=0 and (flag='%s' or rflag='%s' )order by id "%(self.flag,self.rflag)
+        sql = "SELECT id,info,user FROM chatlog where state=0 and (flag='%s' or rflag='%s' )order by id "%(self.flag,self.flag)
         t=self.db.do_sql(sql)
         self.updateChatPanel(t)
 
@@ -83,6 +90,7 @@ class ChatFrame1(wx.Frame):
             str1="%s : %s \n"%(tp[2],tp[1])
             str=str+str1
         self.chatpanel.SetValue(str)
+        self.chatpanel.ShowPosition(self.chatpanel.GetLastPosition())  # 移动到最底部
 
     def sumbit(self, event):
         if self.answerpanel.GetValue()!="":
@@ -91,10 +99,10 @@ class ChatFrame1(wx.Frame):
         event.Skip()
 
     def clear(self, event):
-        sql = "update  chatlog  set state=1 where  (flag='%s' or rflag='%s')"%(self.flag,self.rflag)
+        sql = "update  chatlog  set state=1 where  (flag='%s' or rflag='%s')"%(self.flag,self.flag)
         self.db.upda_sql(sql)
         event.Skip()
 
     def db_chat_update(self,info,user1):
-        sql="INSERT INTO chatlog  (`info`,`user`,`flag`,`rflag`) VALUES ('%s','%s','%s','%s')"%(info,user1,self.flag,self.rflag)
+        sql="INSERT INTO chatlog (`info`,`user`,`flag`,`rflag`) VALUES ('%s','%s','%s','%s')"%(info,user1,self.flag,self.rflag)
         self.db.upda_sql(sql)

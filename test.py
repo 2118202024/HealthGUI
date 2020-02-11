@@ -616,8 +616,8 @@ class ChatUserInfoPanel(wx.Panel):
         cf.Show()
         cf.Center(wx.BOTH)
 
-        rname = self.operator + '-' +name
-        self.ReadUpdateInfo(rname)
+        # rname = self.operator + '-' +name
+        # self.ReadUpdateInfo(rname)
         eve.Skip()
 
     def DoLayOut(self):
@@ -659,7 +659,7 @@ class ChatUserInfoPanel(wx.Panel):
         frameSizer.Layout()
 
     def ReadChatInfo(self):
-        sql = "SELECT `info`,`flag`,`rflag`,`read_state`,`date` FROM `chatlog` WHERE 1 "
+        sql = "SELECT `info`,`flag`,`rflag`,`read_state`,`date` FROM `chatlog` WHERE `state`=0  order by `date` "
         result_all = db.do_sql(sql)
         different_user_list = []
         useful_info=[]
@@ -671,12 +671,13 @@ class ChatUserInfoPanel(wx.Panel):
                 else:
                     different_user_list.append(doctor_info[1])
                     useful_info.append([doctor_info[1],row[0],row[3],row[4]])
+        # print(useful_info)
         return useful_info
 
     def ReadUpdateInfo(self,a):
         try:
             sql = "update `chatlog` set `read_state`=10  WHERE `rflag`='%s' "%a
-            result_all = db.upda_sql(sql)
+            db.upda_sql(sql)
         except:
             print('erro')
 
