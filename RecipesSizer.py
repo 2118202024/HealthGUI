@@ -54,7 +54,7 @@ class RecipesSizer():
             self.sizerClear()
             for i in range(maxlen):
                 road = os.path.exists('./img/%s.jpg' % result[i][1])
-                print("..."+result[i][1])
+                # print("..."+result[i][1])
                 if road:
                     bmp = wx.Bitmap('./img/%s.jpg' % result[i][1])
                     # 图片

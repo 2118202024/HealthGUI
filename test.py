@@ -246,7 +246,7 @@ class FlatMenuDemo(wx.Frame):
             self._mgr.AddPane(ChatUserInfoPanel(self, self.operator), AuiPaneInfo().Name("main_panel").Top().
                               CenterPane())
 
-            self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("user_info").Caption("用户交流窗口").
+            self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("user_info").Caption("养生文章").
                               Bottom().Right().CloseButton(False).MaximizeButton(True).
                               MinimizeButton(True).MinSize(wx.Size(400, 200)))
         else:
@@ -577,8 +577,7 @@ class FlatMenuDemo(wx.Frame):
 
         ctrl.AddPage(OnDiseaseSearch(ctrl),  "按病名搜索", False, page_bmp)
 
-        ctrl.AddPage(wx.TextCtrl(ctrl, -1, "Some more text", wx.DefaultPosition, wx.DefaultSize,
-                                 wx.TE_MULTILINE | wx.NO_BORDER), "按身体异常搜索")
+        ctrl.AddPage(OnStateSearch(ctrl), "按身体异常搜索",False, page_bmp)
 
         # Demonstrate how to disable a tab
 
@@ -599,22 +598,27 @@ class ChatUserInfoPanel(wx.Panel):
         self.operator=operator
         wx.Panel.__init__(self, parent, -1)
         self.mainPanel = wx.Panel(self)
-        self.mainPanel.SetBackgroundColour(wx.BLUE)
+        self.mainPanel.SetBackgroundColour((154,205,50))
 
         self.DoLayOut()
 
     def OnButton(self,eve):
+
         id=eve.GetId()
-        name = "doctor_name_" + str(id)
+        name = "user_name_" + str(id)
         t = wx.FindWindowByName(name=name)
         name = t.GetValue()
-        cf = ChatFrame1(None, wx.ID_ANY,'', size=wx.Size(850, 500),style=wx.CAPTION|wx.CLOSE_BOX)
+
+        cf = ChatFrame1(None, wx.ID_ANY,'', size=wx.Size(550, 500),style=wx.CAPTION|wx.CLOSE_BOX)
         cf.setuser(self.operator)
         cf.setserver(name)
         cf.setflag(self.operator,name)
         cf.CenterOnParent(wx.BOTH)
         cf.Show()
         cf.Center(wx.BOTH)
+
+        rname = self.operator + '-' +name
+        self.ReadUpdateInfo(rname)
         eve.Skip()
 
     def DoLayOut(self):
@@ -642,10 +646,12 @@ class ChatUserInfoPanel(wx.Panel):
                 namename.SetBackgroundColour(wx.YELLOW)
                 majorname.SetBackgroundColour(wx.YELLOW)
                 scorename.SetBackgroundColour(wx.YELLOW)
+                btmname.SetBackgroundColour(wx.YELLOW)
             else:
                 namename.SetBackgroundColour(wx.WHITE)
                 majorname.SetBackgroundColour(wx.WHITE)
                 scorename.SetBackgroundColour(wx.WHITE)
+                btmname.SetBackgroundColour(wx.WHITE)
             usersizer.Add(sizername, 0, wx.EXPAND | wx.ALL, 3)
 
             usersizer.Layout()
@@ -657,16 +663,23 @@ class ChatUserInfoPanel(wx.Panel):
         sql = "SELECT `info`,`flag`,`rflag`,`read_state`,`date` FROM `chatlog` WHERE 1 "
         result_all = db.do_sql(sql)
         different_user_list = []
-        # useful_info=[]
+        useful_info=[]
         for row in result_all:
             doctor_info=row[2].split('-')
             if self.operator == doctor_info[0] :
-                # useful_info.append([row[0],doctor_info[1],row[3]])
                 if doctor_info[1] in different_user_list :
                     pass
                 else:
-                    different_user_list.append([doctor_info[1],row[0],row[3],row[4]])
-        return different_user_list
+                    different_user_list.append(doctor_info[1])
+                    useful_info.append([doctor_info[1],row[0],row[3],row[4]])
+        return useful_info
+
+    def ReadUpdateInfo(self,a):
+        try:
+            sql = "update `chatlog` set `read_state`=10  WHERE `rflag`='%s' "%a
+            result_all = db.upda_sql(sql)
+        except:
+            print('erro')
 
 
 class MangerInfoPanel(wx.Panel):
@@ -777,7 +790,7 @@ class FeaturedRecipes(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
 
-        self.SetBackgroundColour(wx.GREEN)
+        self.SetBackgroundColour((34,139,34))
         m_comboBox1Choices = [u"营养早餐", u"丰盛午餐", u"健康晚餐", u"肌肉食谱", u"孕妇食谱", u"春季食谱", u"夏季食谱", u"秋季食谱", u"冬季食谱"]
         self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"营养早餐", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,wx.CB_READONLY)
         self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
@@ -792,7 +805,6 @@ class FeaturedRecipes(wx.Panel):
         try:
             sql = "SELECT `details`,`recipe_name`,`Satisfaction` FROM `recipe_details` WHERE `recipe_type`='营养早餐' "
             result = db.do_sql(sql)
-            print(result)
             self.RecipesSizer.changeSizer(result)
         except:
             print('erro')
@@ -942,6 +954,122 @@ class OnDiseaseSearch(wx.Panel):
         self.SetSizer(searchsizer)
         searchsizer.Layout()
         self.m_comboBox1.Bind(wx.EVT_COMBOBOX, self.OnChooseRecipes)
+    def OnChooseRecipes(self,eve):
+        name = self.m_comboBox1.GetValue()
+        try:
+            sql="SELECT `recipe` FROM `recipe_disease_info` WHERE `disease_name`='%s' "%name
+            result=db.do_sql_one(sql)
+            if len(result)>0:
+                RecipesList=result[0].split(";")
+                RecipesList.remove("")
+                str=""
+                for name in RecipesList:
+                    str=str+"'%s',"%name
+                str=str[:-1]
+                sql = "SELECT `details`,`recipe_name`,`Satisfaction` FROM `recipe_details` WHERE `recipe_name` in (%s) " % str
+                result = db.do_sql(sql)
+                self.RecipesSizer.changeSizer(result)
+
+        except:
+            result=[[]]
+            print("暂无菜谱")
+
+
+class OnStateSearch(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+
+        searchsizer = wx.BoxSizer(wx.VERTICAL)
+
+        self.gSizer1 = wx.GridSizer(2, 6, -1, -1)
+        searchsizer.Add(self.gSizer1, 0, wx.ALL, 5)
+        # 读取数据库获得列表后添加checkbox
+        self.AddCheckBox()
+        # 添加按钮
+        self.bt_StateSearchOK = wx.Button(self, wx.ID_ANY, u"提交", wx.DefaultPosition, wx.DefaultSize, 0)
+        searchsizer.Add(self.bt_StateSearchOK, 0, wx.ALL, 5)
+        # 添加label
+        self.label_result = wx.StaticText(self, wx.ID_ANY, u"请选择您的症状并提交。", wx.DefaultPosition, wx.DefaultSize, 0)
+        self.label_result.Wrap(-1)
+        searchsizer.Add(self.label_result, 0, wx.ALL, 5)
+        # 调用菜谱sizer
+        self.RecipesSizer = RecipesSizer(self, "DiseaseStateRecipes")
+        self.sizer = self.RecipesSizer.getSizer()
+
+        searchsizer.Add(self.sizer, 0, wx.ALL, 5)
+
+
+        self.SetSizer(searchsizer)
+        searchsizer.Layout()
+        # self.m_comboBox1.Bind(wx.EVT_COMBOBOX, self.OnChooseRecipes)
+        # 绑定事件
+        self.bt_StateSearchOK.Bind(wx.EVT_BUTTON, self.StateSubmit)
+
+    def StateSubmit(self,event):
+        list1 = self.DiseaseStatelist
+        DiseaseList=[]
+        for i in range(len(list1)):
+            name="DiseaseStateCB"+str(i)
+            t = wx.FindWindowByName(name=name)
+            IsChecked = t.IsChecked()
+            if IsChecked:
+                name=t.GetLabel()
+                DiseaseList.append(self.DiseaseStateDict[name])
+        DiseaseList = list(set(DiseaseList))
+        str1=""
+        for name in DiseaseList:
+            str1=str1+name+" "
+        # 把确诊显示出来
+        if DiseaseList==[]:
+            self.label_result.LabelText = "您还未选择不适原因，请选择后再提交。"
+        else:
+            self.label_result.LabelText="您可能患有 %s，下面为您推荐菜谱。"%str1
+        self.GetRecipe(DiseaseList)
+
+    def GetRecipe(self,DiseaseList):
+        if DiseaseList==[]:
+            pass
+        else:
+            str1=""
+            for name in DiseaseList:
+                str1 = str1 + "'%s'," % name
+            sql = "SELECT `recipe` FROM `recipe_disease_info` WHERE `disease_name` in (%s) " % str1[:-1]
+            result = db.do_sql(sql)
+            Recipe=""
+            for k in result:
+                for t in k:
+                    Recipe=Recipe+t
+
+            RecipesList = Recipe.split(";")
+            RecipesList.remove("")
+            RecipesList=list(set(RecipesList))
+            str = ""
+            for name in RecipesList:
+                str = str + "'%s'," % name
+            str = str[:-1]
+            sql = "SELECT `details`,`recipe_name`,`Satisfaction` FROM `recipe_details` WHERE `recipe_name` in (%s) " % str
+            result = db.do_sql(sql)
+            self.RecipesSizer.changeSizer(result)
+
+    def getDiseaseStateDict(self):
+        sql = "SELECT `state_name`,`kinds` FROM `disease_State` WHERE 1"
+        result = db.do_sql(sql)
+        list=[]
+        dict={}
+        for name in result:
+            dict[name[0]]=name[1]
+            list.append(name[0])
+        self.DiseaseStateDict=dict
+        self.DiseaseStatelist=list
+        return list
+    def AddCheckBox(self):
+        self.getDiseaseStateDict()
+        list=self.DiseaseStatelist
+        for i in range(len(list)):
+            name="DiseaseStateCB"+str(i)
+            CheckBox= wx.CheckBox(self, wx.ID_ANY,list[i],name=name)
+
+            self.gSizer1.Add(CheckBox, 0, wx.ALL, 5)
     def OnChooseRecipes(self,eve):
         name = self.m_comboBox1.GetValue()
         try:
