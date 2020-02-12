@@ -165,7 +165,7 @@ class FM_MyRenderer(FM.FMRenderer):
         dc.SetBrush(wx.Brush(startColour))
         dc.DrawRectangle(0, 0, rect.GetWidth(), rect.GetHeight())
 
-
+#主界面布局，菜单栏，工具栏和状态栏
 class FlatMenuDemo(wx.Frame):
 
     def __init__(self, parent, id=wx.ID_ANY, title="", pos=wx.DefaultPosition,
@@ -220,6 +220,7 @@ class FlatMenuDemo(wx.Frame):
         ctrl.SetPage(self.GetIntroText())
         return ctrl
 
+    #界面布局
     def DoNewLayout(self):
         helpMenu = FM.FlatMenu()
         helpImg = wx.Bitmap(os.path.join(bitmapDir, "help-16.png"), wx.BITMAP_TYPE_PNG)
@@ -267,7 +268,7 @@ class FlatMenuDemo(wx.Frame):
 
         self._mb.PositionAUI(self._mgr)
         self._mgr.Update()
-
+    #创建菜单
     def CreateMenu(self):
         # Create the menubar
         self._mb = FM.FlatMenuBar(self, wx.ID_ANY, 32, 5, options = FM_OPT_SHOW_TOOLBAR )
@@ -303,7 +304,7 @@ class FlatMenuDemo(wx.Frame):
 
         # Add menu to the menu bar
         self._mb.Append(fileMenu, "&File")
-
+    #给菜单绑定事件
     def ConnectEvents(self):
 
         # Attach menu events to some handlers
@@ -315,10 +316,10 @@ class FlatMenuDemo(wx.Frame):
 
         if "__WXMAC__" in wx.Platform:
             self.Bind(wx.EVT_SIZE, self.OnSize)
-
+    #
     def OnPersonalInfo(self, event):
         event.Skip()
-
+    #注册菜单绑定事件，注册对话框显示窗口
     def OnRegistered(self, event):
         ls=FormDialog()
         ls.ShowModal()
@@ -351,7 +352,7 @@ class FlatMenuDemo(wx.Frame):
         user_inform=dict(paw_info)
         id_inform=dict(id_info)
         return user_inform,id_inform,doctor_info
-
+    #登录窗口，如果根据密码判断身份，确认后选择相应的显示窗口
     def Onlogin(self, event):
         staff_inform ,name_id_info,doctor_all_info= self.GetUserInfo()
         dlg = wx.PasswordEntryDialog(self, '请输入系统管理员密码：', '系统登录')
@@ -610,9 +611,9 @@ class FlatMenuDemo(wx.Frame):
         page_bmp = wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, wx.Size(16, 16))
         ctrl.AddPage(MangeRecipesPanel(ctrl), "菜谱类型信息", False, page_bmp)
 
-        ctrl.AddPage(OnDiseaseSearch(ctrl),  "疾病菜谱信息", False, page_bmp)
+        ctrl.AddPage(MangeDiseasePanel(ctrl),  "疾病菜谱信息", False, page_bmp)
 
-        ctrl.AddPage(OnStateSearch(ctrl), "人员信息",False, page_bmp)
+        # ctrl.AddPage(OnStateSearch(ctrl), "人员信息",False, page_bmp)
 
         # Demonstrate how to disable a tab
 
@@ -627,7 +628,7 @@ class FlatMenuDemo(wx.Frame):
         self.id_num=id
         self.doctor_info=doctor_info
 
-
+#医生身份登录时，交谈用户显示窗口
 class ChatUserInfoPanel(wx.Panel):
     def __init__(self, parent,operator):
         self.operator=operator
@@ -717,7 +718,7 @@ class ChatUserInfoPanel(wx.Panel):
         except:
             print('erro')
 
-
+#管理员身份登录时，医生交流次数柱状图显示窗口
 class MangeDataInfoPanel(wx.Panel):
     def __init__(self, parent):
 
@@ -792,7 +793,7 @@ class MangeDataInfoPanel(wx.Panel):
         plt.savefig("./img/%s_base.png" % log,dpi=65,bbox_inches='tight')
         plt.close()
 
-
+#管理员身份登录时，疾病-对应食谱显示窗口
 class MangeDiseaseInfoPanel(wx.Panel):
     def __init__(self, parent):
 
@@ -854,50 +855,7 @@ class MangeDiseaseInfoPanel(wx.Panel):
         plt.savefig("./img/%s.png" % log,dpi=65,bbox_inches='tight')
         plt.close()
 
-
-class MangeUserPanel(wx.Panel):
-    def __init__(self, parent):
-        wx.Panel.__init__(self, parent, -1)
-
-        searchsizer = wx.BoxSizer(wx.VERTICAL)
-        sh_sizer1 = wx.BoxSizer()
-        m_comboBox1Choices = [u"高血压", u"糖尿病", u"心脏病", u"缺乏维生素A", u"缺乏维生素B", u"缺乏维生素E", u"缺铁", u"缺锌", u"缺钙"]
-        self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,
-                                       wx.CB_READONLY)
-        sh_sizer1.Add(self.m_comboBox1, 7, wx.ALL, 5)
-        self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
-        sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
-        searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
-
-        # 调用菜谱sizer
-        self.RecipesSizer = RecipesSizer(self, "DiseaseRecipes")
-        self.sizer = self.RecipesSizer.getSizer()
-
-        searchsizer.Add(self.sizer, 0, wx.ALL, 5)
-
-        self.SetSizer(searchsizer)
-        searchsizer.Layout()
-        self.m_comboBox1.Bind(wx.EVT_COMBOBOX, self.OnChooseRecipes)
-    def OnChooseRecipes(self,eve):
-        name = self.m_comboBox1.GetValue()
-        try:
-            sql="SELECT `recipe` FROM `recipe_disease_info` WHERE `disease_name`='%s' "%name
-            result=db.do_sql_one(sql)
-            if len(result)>0:
-                RecipesList=result[0].split(";")
-                RecipesList.remove("")
-                str=""
-                for name in RecipesList:
-                    str=str+"'%s',"%name
-                str=str[:-1]
-                sql = "SELECT `details`,`recipe_name`,`Satisfaction` FROM `recipe_details` WHERE `recipe_name` in (%s) " % str
-                result = db.do_sql(sql)
-                self.RecipesSizer.changeSizer(result)
-
-        except:
-            result=[[]]
-            print("暂无菜谱")
-
+#菜谱数据表格
 class RecipesDataTable(gridlib.GridTableBase):
     def __init__(self):
         gridlib.GridTableBase.__init__(self)
@@ -942,7 +900,7 @@ class RecipesDataTable(gridlib.GridTableBase):
                 self.data[row][col] = value
             except IndexError:
                 # add a new row
-                self.data.append(['0'] * self.GetNumberCols())
+                self.data.append([self.GetValue(-1, 0) + 1, '', '', '', 5])
                 innerSetValue(row, col, value)
                 # tell the grid we've added a row
                 msg = gridlib.GridTableMessage(self,            # The table
@@ -996,6 +954,7 @@ class RecipesTableGrid(gridlib.Grid):
         self.selectRow=evt.GetRow()
         print("选中了第%s行"%self.selectRow)
         evt.Skip()
+#菜谱详细信息表格显示panel
 class MangeRecipesPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -1018,7 +977,142 @@ class MangeRecipesPanel(wx.Panel):
     def OnButton(self, evt):
         db.upda_sql("truncate table `recipe_details`")
         for i in self.grid.table.data:
-            sql="insert into `recipe_details` value (%s,\'%s\',\'%s\',\'%s\',%s,\'%s\')"%(i[0],i[1],i[2],i[3],i[4],i[5])
+            sql="insert into `recipe_details` value (%s,%s,%s,%s,%s,'none')"%(i[0],i[1],i[2],i[3],i[4])
+            print(sql)
+            db.upda_sql(sql)
+
+        self.grid.Refresh()
+
+    def OnDel(self, evt):
+        if  self.grid.selectRow!=-1:
+            self.grid.table.data.remove(self.grid.table.data[self.grid.selectRow])
+            self.grid.Refresh()
+            self.grid.selectRow = -1
+        else:
+            print("请选择对应的行数")
+        pass
+
+#疾病菜谱数据表格
+class DiseaseDataTable(gridlib.GridTableBase):
+    def __init__(self):
+        gridlib.GridTableBase.__init__(self)
+        self.colLabels = ['id', '疾病名称', '对应菜谱']
+
+        self.dataTypes = [gridlib.GRID_VALUE_NUMBER,
+                          gridlib.GRID_VALUE_STRING,
+                          gridlib.GRID_VALUE_STRING,
+
+                          ]
+        sql = "SELECT id,disease_name,recipe FROM `recipe_disease_info` WHERE 1 "
+        result = db.do_sql(sql)
+
+        result=list(result)
+        for i in range(len(result)):
+            result[i]=list(result[i])
+        self.data = result
+
+    def GetNumberRows(self):
+        return len(self.data) + 1
+
+    def GetNumberCols(self):
+        return len(self.data[0])
+
+    def IsEmptyCell(self, row, col):
+        try:
+            return not self.data[row][col]
+        except IndexError:
+            return True
+
+    def GetValue(self, row, col):
+        try:
+            return self.data[row][col]
+        except IndexError:
+            return ''
+
+    def SetValue(self, row, col, value):
+        def innerSetValue(row, col, value):
+            try:
+                self.data[row][col] = value
+            except IndexError:
+                # add a new row
+                self.data.append([self.GetValue(-1, 0) + 1, '', ''])
+                innerSetValue(row, col, value)
+                # tell the grid we've added a row
+                msg = gridlib.GridTableMessage(self,            # The table
+                        gridlib.GRIDTABLE_NOTIFY_ROWS_APPENDED, # what we did to it
+                        1                                       # how many
+                        )
+
+                self.GetView().ProcessTableMessage(msg)
+        innerSetValue(row, col, value)
+
+    def GetColLabelValue(self, col):
+        return self.colLabels[col]
+
+    def GetTypeName(self, row, col):
+        return self.dataTypes[col]
+
+    def CanGetValueAs(self, row, col, typeName):
+        colType = self.dataTypes[col].split(':')[0]
+        if typeName == colType:
+            return True
+        else:
+            return False
+
+    def CanSetValueAs(self, row, col, typeName):
+        return self.CanGetValueAs(row, col, typeName)
+class DiseaseTableGrid(gridlib.Grid):
+    def __init__(self, parent):
+        gridlib.Grid.__init__(self, parent, -1)
+
+        self.table = DiseaseDataTable()
+        self.SetTable(self.table, True)
+        self.SetRowLabelSize(0)
+        self.SetMargins(0,0)
+        self.AutoSizeColumns(False)
+
+        self.Bind(gridlib.EVT_GRID_CELL_LEFT_DCLICK, self.OnLeftDClick)
+        self.Bind(gridlib.EVT_GRID_SELECT_CELL, self.OnSelectCell)
+
+    def OnLeftDClick(self, evt):
+        if self.CanEnableCellControl():
+            if evt.GetCol()==5:
+                print(evt.GetCol())
+            else:
+                self.EnableCellEditControl()
+    def OnSelectCell(self, evt):
+        if evt.Selecting():
+            msg = 'Selected'
+        else:
+            msg = 'Deselected'
+
+        self.selectRow=evt.GetRow()
+        print("选中了第%s行"%self.selectRow)
+        evt.Skip()
+#疾病和菜谱对应显示窗口，增肌菜谱时，注意以英文;间隔
+class MangeDiseasePanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+        self.grid = DiseaseTableGrid(self)
+        b = wx.Button(self, -1, "提交")
+        t = wx.Button(self, -1, "删除")
+        b.SetDefault()
+        t.SetDefault()
+        self.Bind(wx.EVT_BUTTON, self.OnButton, b)
+        self.Bind(wx.EVT_BUTTON, self.OnDel, t)
+        bs = wx.BoxSizer(wx.VERTICAL)
+        btnsizer=wx.BoxSizer()
+        btnsizer.Add(b)
+        btnsizer.Add(t)
+        bs.Add(self.grid, 1, wx.GROW|wx.ALL, 5)
+        bs.Add(btnsizer)
+
+        self.SetSizer(bs)
+
+    def OnButton(self, evt):
+        db.upda_sql("truncate table `recipe_disease_info`")
+        for i in self.grid.table.data:
+            sql="insert into `recipe_disease_info` value (%s,\'%s\',\'%s\')"%(i[0],i[1],i[2])
             db.upda_sql(sql)
         self.grid.Refresh()
 
@@ -1031,6 +1125,7 @@ class MangeRecipesPanel(wx.Panel):
             print("请选择对应的行数")
         pass
 
+#用户身份登录，医生信息显示窗口
 class DoctorPanel(wx.Panel):
     def __init__(self, parent,operator,doctor_info):
         self.operator=operator
@@ -1082,7 +1177,7 @@ class DoctorPanel(wx.Panel):
         self.SetSizer(frameSizer)
         frameSizer.Layout()
 
-
+#特色食谱显示窗口
 class FeaturedRecipes(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -1133,7 +1228,7 @@ class FeaturedRecipes(wx.Panel):
         print("2")
         eve.Skip()
 
-
+#按菜谱搜索显示窗口
 class OnRecipesSearch(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -1227,7 +1322,7 @@ class OnRecipesSearch(wx.Panel):
             RecipesSatisfaction = wx.FindWindowByName(name=name)
             RecipesSatisfaction.LabelText =""
 
-
+#按疾病搜索显示窗口
 class OnDiseaseSearch(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -1271,7 +1366,7 @@ class OnDiseaseSearch(wx.Panel):
             result=[[]]
             print("暂无菜谱")
 
-
+#按照身体异常搜索显示窗口
 class OnStateSearch(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent, -1)
@@ -1368,7 +1463,7 @@ class OnStateSearch(wx.Panel):
 
             self.gSizer1.Add(CheckBox, 0, wx.ALL, 5)
 
-
+#注册界面对话框
 class FormDialog(sc.SizedDialog):
     def __init__(self):
         sc.SizedDialog.__init__(self, None, -1, "用户注册",
@@ -1419,6 +1514,8 @@ class FormDialog(sc.SizedDialog):
         self.SetMinSize(self.GetSize())
 
 
+
+
 class MyApp(wx.App):
     def OnInit(self):
         mainwin = FlatMenuDemo(None, wx.ID_ANY, " 健康食谱查询系统                       2020年1月   Version 0.100104A",
@@ -1427,7 +1524,6 @@ class MyApp(wx.App):
         mainwin.Show()
         mainwin.Center(wx.BOTH)
         return True
-
 
 if __name__ == "__main__":
     app = MyApp()
