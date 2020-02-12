@@ -237,7 +237,9 @@ class FlatMenuDemo(wx.Frame):
                               MinimizeButton(True).MinSize(wx.Size(300, 150)))
         elif self.id_num==MANAGER_ID:
             print('管理员')
-            self._mgr.AddPane(MangerInfoPanel(self, self.operator, self.doctor_info), AuiPaneInfo().Name("医师信息").
+            self._mgr.AddPane(MangeUserPanel(self), AuiPaneInfo().Name("main_panel").Top().
+                              CenterPane())
+            self._mgr.AddPane(MangeDataInfoPanel(self, self.operator, self.doctor_info), AuiPaneInfo().Name("医师信息").
                               Caption("医师信息").Right().CloseButton(False).MaximizeButton(False).MinimizeButton(True).
                               MinSize(wx.Size(300, 150)))
         elif self.id_num == DOCTOR_ID:
@@ -250,7 +252,6 @@ class FlatMenuDemo(wx.Frame):
                               MinimizeButton(True).MinSize(wx.Size(400, 200)))
         else:
             print(self.id_num)
-
 
         self._mgr.AddPane(FeaturedRecipes(self), AuiPaneInfo().
                           Name("thirdauto").Caption("特色食谱").
@@ -659,7 +660,7 @@ class ChatUserInfoPanel(wx.Panel):
         frameSizer.Layout()
 
     def ReadChatInfo(self):
-        sql = "SELECT `info`,`flag`,`rflag`,`read_state`,`date` FROM `chatlog` WHERE `state`=0  order by `date` "
+        sql = "SELECT `info`,`flag`,`rflag`,`read_state`,`date` FROM `chatlog` WHERE `state`=0  order by `date` DESC "
         result_all = db.do_sql(sql)
         different_user_list = []
         useful_info=[]
@@ -682,16 +683,17 @@ class ChatUserInfoPanel(wx.Panel):
             print('erro')
 
 
-class MangerInfoPanel(wx.Panel):
+class MangeDataInfoPanel(wx.Panel):
     def __init__(self, parent,operator,doctor_info):
         self.operator=operator
         self.doctor_info=doctor_info
         wx.Panel.__init__(self, parent, -1)
         self.mainPanel = wx.Panel(self)
-        self.mainPanel.SetBackgroundColour(wx.BLUE)
+        self.mainPanel.SetBackgroundColour(wx.WHITE)
 
         self.DoLayOut()
 
+        #医生的交流次数用柱状图显示，每种疾病对应的食谱数也使用柱状图
 
     def OnButton(self,eve):
         id=eve.GetId()
@@ -708,30 +710,113 @@ class MangerInfoPanel(wx.Panel):
         eve.Skip()
 
     def DoLayOut(self):
-        MyID = 10000
+        self.PlotChart()
+
         frameSizer = wx.BoxSizer(wx.VERTICAL)
         docsizer = wx.BoxSizer(wx.VERTICAL)
         self.mainPanel.SetSizer(docsizer)
 
-        for i in range(len(self.doctor_info)):
-            MyID += 1
-            sizername = wx.BoxSizer()
-            namename = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][0], wx.DefaultPosition, wx.Size(60, 20),
-                                       wx.TE_READONLY,name="doctor_name_"+str(MyID))
-            sizername.Add(namename, 0, wx.EXPAND | wx.ALL, 3)
-            majorname = wx.TextCtrl(self.mainPanel, wx.ID_ANY, self.doctor_info[i][2], wx.DefaultPosition, wx.Size(90, 20), wx.TE_READONLY)
-            sizername.Add(majorname, 0, wx.EXPAND | wx.ALL, 3)
-            scorename = wx.TextCtrl(self.mainPanel, wx.ID_ANY,self.doctor_info[i][3], wx.DefaultPosition, wx.Size(35, 20), wx.TE_READONLY)
-            sizername.Add(scorename, 0, wx.EXPAND | wx.ALL, 3)
-            btmname = wx.Button(self.mainPanel, MyID, u"交流", wx.DefaultPosition, wx.DefaultSize, 0)
-            self.Bind(wx.EVT_BUTTON, self.OnButton, btmname)
-            sizername.Add(btmname, 0, wx.EXPAND | wx.ALL, 2)
-            docsizer.Add(sizername, 0, wx.EXPAND | wx.ALL, 3)
-
-            docsizer.Layout()
+        doctor_chat_chart= wx.Bitmap('./doctor_chat_num_base.png')
+        m_bitmap1 = wx.StaticBitmap(self,  wx.ID_ANY,doctor_chat_chart, wx.DefaultPosition, (180, 120),0)
+        docsizer.Add(m_bitmap1, 0, wx.ALL, 5)
+        docsizer.Layout()
         frameSizer.Add(self.mainPanel, 1, wx.EXPAND)
         self.SetSizer(frameSizer)
         frameSizer.Layout()
+
+    def ReadChatInfo(self):
+        sql1='select name from user_info where id_state=10  '
+        doctor_name = db.do_sql(sql1)
+        sql='select flag from chatlog where 1  '
+        chatflag=db.do_sql(sql)
+        doctor_chat_num=[]
+        for name in doctor_name:
+            num=0
+            for info in chatflag:
+                if name[0] in info[0]:
+                    num+=1
+                else:
+                    pass
+            doctor_chat_num.append([name[0],num])
+
+        print(doctor_chat_num)
+        return doctor_chat_num
+
+    def PlotChart(self):
+        plot_data=self.ReadChatInfo()
+        import matplotlib.pyplot as plt
+        # 中文问题
+        plt.rcParams['font.sans-serif'] = ['SimHei']  # 中文字体设置-黑体
+        plt.rcParams['axes.unicode_minus'] = False  # 解决保存图像是负号'-'显示为方块的问题
+        # sns.set(font='SimHei')  # 解决Seaborn中文显示问题
+        name_list=[]
+        num_list=[]
+        for row in plot_data:
+            name_list.append(row[0])
+            num_list.append(row[1])
+        # num_list = [5, 5.5, 20, 50.5, 100, 105, 200, 100, 50]
+
+        rect = plt.bar(range(len(num_list)), num_list, tick_label='')
+
+        plt.legend((rect,), ("交流次数",))
+
+        # name_num = 0
+        for name_num in range(len(name_list)):
+            plt.text(name_num - 0.2, -10, name_list[name_num], rotation=25)
+
+        plt.text(len(plot_data), 10, "医生姓名")#, fontproperties=zhfont1
+        plt.ylabel("交流次数")#, fontproperties=zhfont1
+
+        plt.title("医生交流次数柱状图")#, fontproperties=zhfont1
+
+        # plt.show() #显示图片
+
+        log='doctor_chat_num'
+        plt.savefig("./%s_base.png" % log)
+        plt.close()
+
+class MangeUserPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+
+        searchsizer = wx.BoxSizer(wx.VERTICAL)
+        sh_sizer1 = wx.BoxSizer()
+        m_comboBox1Choices = [u"高血压", u"糖尿病", u"心脏病", u"缺乏维生素A", u"缺乏维生素B", u"缺乏维生素E", u"缺铁", u"缺锌", u"缺钙"]
+        self.m_comboBox1 = wx.ComboBox(self, wx.ID_ANY, u"", wx.DefaultPosition, wx.DefaultSize, m_comboBox1Choices,
+                                       wx.CB_READONLY)
+        sh_sizer1.Add(self.m_comboBox1, 7, wx.ALL, 5)
+        self.more_button = AB.AquaButton(self, -1, None, "更多食谱")
+        sh_sizer1.Add(self.more_button, 3, wx.ALL, 5)
+        searchsizer.Add(sh_sizer1, 0, wx.ALL, 5)
+
+        # 调用菜谱sizer
+        self.RecipesSizer = RecipesSizer(self, "DiseaseRecipes")
+        self.sizer = self.RecipesSizer.getSizer()
+
+        searchsizer.Add(self.sizer, 0, wx.ALL, 5)
+
+        self.SetSizer(searchsizer)
+        searchsizer.Layout()
+        self.m_comboBox1.Bind(wx.EVT_COMBOBOX, self.OnChooseRecipes)
+    def OnChooseRecipes(self,eve):
+        name = self.m_comboBox1.GetValue()
+        try:
+            sql="SELECT `recipe` FROM `recipe_disease_info` WHERE `disease_name`='%s' "%name
+            result=db.do_sql_one(sql)
+            if len(result)>0:
+                RecipesList=result[0].split(";")
+                RecipesList.remove("")
+                str=""
+                for name in RecipesList:
+                    str=str+"'%s',"%name
+                str=str[:-1]
+                sql = "SELECT `details`,`recipe_name`,`Satisfaction` FROM `recipe_details` WHERE `recipe_name` in (%s) " % str
+                result = db.do_sql(sql)
+                self.RecipesSizer.changeSizer(result)
+
+        except:
+            result=[[]]
+            print("暂无菜谱")
 
 
 class DoctorPanel(wx.Panel):
