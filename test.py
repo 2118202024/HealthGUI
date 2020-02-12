@@ -57,6 +57,7 @@ except ImportError: # if it's not there locally, try the wxPython lib.
 from chat import ChatFrame1
 from PIL import Image
 import wx.grid
+import wx.grid as gridlib
 
 import wx.lib.sized_controls as sc
 db=HCJ_database()
@@ -241,7 +242,7 @@ class FlatMenuDemo(wx.Frame):
                               target=self._mgr.GetPane("autonotebook"))
         elif self.id_num==MANAGER_ID:
             print('管理员')
-            self._mgr.AddPane(self.CreateNotebook(), AuiPaneInfo().Name("main_panel").Top().
+            self._mgr.AddPane(self.CreateMangeNotebook(), AuiPaneInfo().Name("main_panel").Top().
                               CenterPane())
             self._mgr.AddPane(MangeDataInfoPanel(self), AuiPaneInfo().Name("医师信息").
                               Caption("医师信息").Right().CloseButton(False).MaximizeButton(False).MinimizeButton(True).
@@ -593,6 +594,34 @@ class FlatMenuDemo(wx.Frame):
 
         return ctrl
 
+    def CreateMangeNotebook(self):
+
+        # create the notebook off-window to avoid flicker
+        client_size = self.GetClientSize()
+        ctrl = aui.AuiNotebook(self, -1, wx.Point(client_size.x, client_size.y),
+                               wx.Size(430, 200), agwStyle=self._notebook_style)
+
+        arts = [aui.AuiDefaultTabArt, aui.AuiSimpleTabArt, aui.VC71TabArt, aui.FF2TabArt,
+                aui.VC8TabArt, aui.ChromeTabArt]
+
+        art = arts[self._notebook_theme]()
+        ctrl.SetArtProvider(art)
+
+        page_bmp = wx.ArtProvider.GetBitmap(wx.ART_NORMAL_FILE, wx.ART_OTHER, wx.Size(16, 16))
+        ctrl.AddPage(MangeRecipesPanel(ctrl), "菜谱类型信息", False, page_bmp)
+
+        ctrl.AddPage(OnDiseaseSearch(ctrl),  "疾病菜谱信息", False, page_bmp)
+
+        ctrl.AddPage(OnStateSearch(ctrl), "人员信息",False, page_bmp)
+
+        # Demonstrate how to disable a tab
+
+        # ctrl.SetPageTextColour(1, wx.RED)
+        # ctrl.SetPageTextColour(2, wx.BLUE)
+        # ctrl.SetRenamable(2, True)
+
+        return ctrl
+
     def SetOperator(self,name,id,doctor_info):
         self.operator=name
         self.id_num=id
@@ -763,6 +792,7 @@ class MangeDataInfoPanel(wx.Panel):
         plt.savefig("./img/%s_base.png" % log,dpi=65,bbox_inches='tight')
         plt.close()
 
+
 class MangeDiseaseInfoPanel(wx.Panel):
     def __init__(self, parent):
 
@@ -815,18 +845,9 @@ class MangeDiseaseInfoPanel(wx.Panel):
         # sns.set(font='SimHei')  # 解决Seaborn中文显示问题
 
         rect = plt.bar(range(len(num_list)), num_list, tick_label=name_list)
-
         plt.legend((rect,), ("菜谱数",))
-
-        # name_num = 0
-        # for name_num in range(len(name_list)):
-        #     plt.text(name_num - 0.2, -12, name_list[name_num], rotation=25)
-
-        # plt.text(len(plot_data), 100, "医生姓名")#, fontproperties=zhfont1
         plt.ylabel("菜谱数")#, fontproperties=zhfont1
-
         plt.title("病症-菜谱柱状图")#, fontproperties=zhfont1
-
         # plt.show() #显示图片
 
         log='disease_recipe'
@@ -877,6 +898,138 @@ class MangeUserPanel(wx.Panel):
             result=[[]]
             print("暂无菜谱")
 
+class RecipesDataTable(gridlib.GridTableBase):
+    def __init__(self):
+        gridlib.GridTableBase.__init__(self)
+        self.colLabels = ['id', '菜谱名称', '菜谱类型', '菜谱制作', '满意度']
+
+        self.dataTypes = [gridlib.GRID_VALUE_NUMBER,
+                          gridlib.GRID_VALUE_STRING,
+                          gridlib.GRID_VALUE_CHOICE + ':营养早餐,丰盛午餐,健康晚餐,肌肉食谱,春季食谱,夏季食谱,秋季食谱,冬季食谱,丰盛午餐',
+                          gridlib.GRID_VALUE_STRING,
+                          gridlib.GRID_VALUE_NUMBER + ':1,5',
+
+                          ]
+        sql = "SELECT id,recipe_name,recipe_type,details,Satisfaction FROM `recipe_details` WHERE 1 "
+        result = db.do_sql(sql)
+
+        result=list(result)
+        for i in range(len(result)):
+            result[i]=list(result[i])
+        self.data = result
+
+    def GetNumberRows(self):
+        return len(self.data) + 1
+
+    def GetNumberCols(self):
+        return len(self.data[0])
+
+    def IsEmptyCell(self, row, col):
+        try:
+            return not self.data[row][col]
+        except IndexError:
+            return True
+
+    def GetValue(self, row, col):
+        try:
+            return self.data[row][col]
+        except IndexError:
+            return ''
+
+    def SetValue(self, row, col, value):
+        def innerSetValue(row, col, value):
+            try:
+                self.data[row][col] = value
+            except IndexError:
+                # add a new row
+                self.data.append(['0'] * self.GetNumberCols())
+                innerSetValue(row, col, value)
+                # tell the grid we've added a row
+                msg = gridlib.GridTableMessage(self,            # The table
+                        gridlib.GRIDTABLE_NOTIFY_ROWS_APPENDED, # what we did to it
+                        1                                       # how many
+                        )
+
+                self.GetView().ProcessTableMessage(msg)
+        innerSetValue(row, col, value)
+
+    def GetColLabelValue(self, col):
+        return self.colLabels[col]
+
+    def GetTypeName(self, row, col):
+        return self.dataTypes[col]
+
+    def CanGetValueAs(self, row, col, typeName):
+        colType = self.dataTypes[col].split(':')[0]
+        if typeName == colType:
+            return True
+        else:
+            return False
+
+    def CanSetValueAs(self, row, col, typeName):
+        return self.CanGetValueAs(row, col, typeName)
+class RecipesTableGrid(gridlib.Grid):
+    def __init__(self, parent):
+        gridlib.Grid.__init__(self, parent, -1)
+
+        self.table = RecipesDataTable()
+        self.SetTable(self.table, True)
+        self.SetRowLabelSize(0)
+        self.SetMargins(0,0)
+        self.AutoSizeColumns(False)
+
+        self.Bind(gridlib.EVT_GRID_CELL_LEFT_DCLICK, self.OnLeftDClick)
+        self.Bind(gridlib.EVT_GRID_SELECT_CELL, self.OnSelectCell)
+
+    def OnLeftDClick(self, evt):
+        if self.CanEnableCellControl():
+            if evt.GetCol()==5:
+                print(evt.GetCol())
+            else:
+                self.EnableCellEditControl()
+    def OnSelectCell(self, evt):
+        if evt.Selecting():
+            msg = 'Selected'
+        else:
+            msg = 'Deselected'
+
+        self.selectRow=evt.GetRow()
+        print("选中了第%s行"%self.selectRow)
+        evt.Skip()
+class MangeRecipesPanel(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, -1)
+        self.grid = RecipesTableGrid(self)
+        b = wx.Button(self, -1, "提交")
+        t = wx.Button(self, -1, "删除")
+        b.SetDefault()
+        t.SetDefault()
+        self.Bind(wx.EVT_BUTTON, self.OnButton, b)
+        self.Bind(wx.EVT_BUTTON, self.OnDel, t)
+        bs = wx.BoxSizer(wx.VERTICAL)
+        btnsizer=wx.BoxSizer()
+        btnsizer.Add(b)
+        btnsizer.Add(t)
+        bs.Add(self.grid, 1, wx.GROW|wx.ALL, 5)
+        bs.Add(btnsizer)
+
+        self.SetSizer(bs)
+
+    def OnButton(self, evt):
+        db.upda_sql("truncate table `recipe_details`")
+        for i in self.grid.table.data:
+            sql="insert into `recipe_details` value (%s,\'%s\',\'%s\',\'%s\',%s,\'%s\')"%(i[0],i[1],i[2],i[3],i[4],i[5])
+            db.upda_sql(sql)
+        self.grid.Refresh()
+
+    def OnDel(self, evt):
+        if  self.grid.selectRow!=-1:
+            self.grid.table.data.remove(self.grid.table.data[self.grid.selectRow])
+            self.grid.Refresh()
+            self.grid.selectRow = -1
+        else:
+            print("请选择对应的行数")
+        pass
 
 class DoctorPanel(wx.Panel):
     def __init__(self, parent,operator,doctor_info):
