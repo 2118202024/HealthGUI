@@ -55,7 +55,7 @@ except ImportError: # if it's not there locally, try the wxPython lib.
     from wx.lib.agw.aui import aui_switcherdialog as ASD
 
 from chat import ChatFrame1
-
+from PIL import Image
 import wx.grid
 
 import wx.lib.sized_controls as sc
@@ -235,13 +235,20 @@ class FlatMenuDemo(wx.Frame):
             self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("test8").Caption("更多健康食谱文章").
                               Bottom().Right().CloseButton(False).MaximizeButton(True).
                               MinimizeButton(True).MinSize(wx.Size(300, 150)))
+            self._mgr.AddPane(FeaturedRecipes(self), AuiPaneInfo().
+                              Name("thirdauto").Caption("特色食谱").
+                              Bottom().MinimizeButton(True).MinSize(wx.Size(800, 240)),
+                              target=self._mgr.GetPane("autonotebook"))
         elif self.id_num==MANAGER_ID:
             print('管理员')
-            self._mgr.AddPane(MangeUserPanel(self), AuiPaneInfo().Name("main_panel").Top().
+            self._mgr.AddPane(self.CreateNotebook(), AuiPaneInfo().Name("main_panel").Top().
                               CenterPane())
-            self._mgr.AddPane(MangeDataInfoPanel(self, self.operator, self.doctor_info), AuiPaneInfo().Name("医师信息").
+            self._mgr.AddPane(MangeDataInfoPanel(self), AuiPaneInfo().Name("医师信息").
                               Caption("医师信息").Right().CloseButton(False).MaximizeButton(False).MinimizeButton(True).
-                              MinSize(wx.Size(300, 150)))
+                              MinSize(wx.Size(380, 280)))
+            self._mgr.AddPane(MangeDiseaseInfoPanel(self), AuiPaneInfo().Name("病症菜谱信息").
+                              Caption("病症菜谱信息").Right().CloseButton(False).MaximizeButton(False).MinimizeButton(True).
+                              MinSize(wx.Size(380, 280)))
         elif self.id_num == DOCTOR_ID:
             print('医生')
             self._mgr.AddPane(ChatUserInfoPanel(self, self.operator), AuiPaneInfo().Name("main_panel").Top().
@@ -250,13 +257,12 @@ class FlatMenuDemo(wx.Frame):
             self._mgr.AddPane(self.CreateHTMLCtrl(), AuiPaneInfo().Name("user_info").Caption("养生文章").
                               Bottom().Right().CloseButton(False).MaximizeButton(True).
                               MinimizeButton(True).MinSize(wx.Size(400, 200)))
+            self._mgr.AddPane(FeaturedRecipes(self), AuiPaneInfo().
+                              Name("thirdauto").Caption("特色食谱").
+                              Bottom().MinimizeButton(True).MinSize(wx.Size(800, 240)),
+                              target=self._mgr.GetPane("autonotebook"))
         else:
             print(self.id_num)
-
-        self._mgr.AddPane(FeaturedRecipes(self), AuiPaneInfo().
-                          Name("thirdauto").Caption("特色食谱").
-                          Bottom().MinimizeButton(True).MinSize(wx.Size(800, 240)),
-                          target=self._mgr.GetPane("autonotebook"))
 
         self._mb.PositionAUI(self._mgr)
         self._mgr.Update()
@@ -684,45 +690,35 @@ class ChatUserInfoPanel(wx.Panel):
 
 
 class MangeDataInfoPanel(wx.Panel):
-    def __init__(self, parent,operator,doctor_info):
-        self.operator=operator
-        self.doctor_info=doctor_info
+    def __init__(self, parent):
+
         wx.Panel.__init__(self, parent, -1)
         self.mainPanel = wx.Panel(self)
         self.mainPanel.SetBackgroundColour(wx.WHITE)
 
-        self.DoLayOut()
-
+        # self.DoLayOut()
+        self.PlotChart()
+        self.start()
         #医生的交流次数用柱状图显示，每种疾病对应的食谱数也使用柱状图
 
-    def OnButton(self,eve):
-        id=eve.GetId()
-        name = "doctor_name_" + str(id)
-        t = wx.FindWindowByName(name=name)
-        name = t.GetValue()
-        cf = ChatFrame1(None)
-        cf.setuser(self.operator)
-        cf.setserver(name)
-        cf.setflag(self.operator,name)
-        cf.CenterOnParent(wx.BOTH)
-        cf.Show()
-        cf.Center(wx.BOTH)
-        eve.Skip()
+    def start(self):
+        self.mainPanel.DestroyChildren()  # 抹掉原先显示的图片
+        self.width, self.height = self.GetSize()
+        self.filename = './img/doctor_chat_num_base.png'
+        image = Image.open(self.filename)
+        self.x, self.y = image.size
+        self.x = self.width / 100 - self.x / 100
+        self.y = self.height / 100 - self.y / 100
+        self.pic = wx.Image(self.filename, wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+        # 通过计算获得图片的存放位置
+        self.button = wx.BitmapButton(self.mainPanel, -1, self.pic, pos=(self.x, self.y))
+        self.mainPanel.Fit()
 
-    def DoLayOut(self):
-        self.PlotChart()
-
-        frameSizer = wx.BoxSizer(wx.VERTICAL)
-        docsizer = wx.BoxSizer(wx.VERTICAL)
-        self.mainPanel.SetSizer(docsizer)
-
-        doctor_chat_chart= wx.Bitmap('./doctor_chat_num_base.png')
-        m_bitmap1 = wx.StaticBitmap(self,  wx.ID_ANY,doctor_chat_chart, wx.DefaultPosition, (180, 120),0)
-        docsizer.Add(m_bitmap1, 0, wx.ALL, 5)
-        docsizer.Layout()
-        frameSizer.Add(self.mainPanel, 1, wx.EXPAND)
-        self.SetSizer(frameSizer)
-        frameSizer.Layout()
+    def change(self, size):  # 如果检测到框架大小的变化，及时改变图片的位置
+        if self.filename != "":
+            self.start()
+        else:
+            pass
 
     def ReadChatInfo(self):
         sql1='select name from user_info where id_state=10  '
@@ -754,26 +750,89 @@ class MangeDataInfoPanel(wx.Panel):
         for row in plot_data:
             name_list.append(row[0])
             num_list.append(row[1])
-        # num_list = [5, 5.5, 20, 50.5, 100, 105, 200, 100, 50]
 
-        rect = plt.bar(range(len(num_list)), num_list, tick_label='')
+        rect = plt.bar(range(len(num_list)), num_list, tick_label=name_list)
 
         plt.legend((rect,), ("交流次数",))
 
-        # name_num = 0
-        for name_num in range(len(name_list)):
-            plt.text(name_num - 0.2, -10, name_list[name_num], rotation=25)
-
-        plt.text(len(plot_data), 10, "医生姓名")#, fontproperties=zhfont1
         plt.ylabel("交流次数")#, fontproperties=zhfont1
 
         plt.title("医生交流次数柱状图")#, fontproperties=zhfont1
+        # plt.show() #显示图片
+        log='doctor_chat_num'
+        plt.savefig("./img/%s_base.png" % log,dpi=65,bbox_inches='tight')
+        plt.close()
+
+class MangeDiseaseInfoPanel(wx.Panel):
+    def __init__(self, parent):
+
+        wx.Panel.__init__(self, parent, -1)
+        self.mainPanel = wx.Panel(self)
+        self.mainPanel.SetBackgroundColour(wx.WHITE)
+
+        self.start()
+        #医生的交流次数用柱状图显示，每种疾病对应的食谱数也使用柱状图
+
+    def start(self):
+        self.PlotChart()
+        self.mainPanel.DestroyChildren()  # 抹掉原先显示的图片
+        self.width, self.height = self.GetSize()
+        self.filename = './img/disease_recipe.png'
+        image = Image.open(self.filename)
+        self.x, self.y = image.size
+        self.x = self.width / 100 - self.x / 100
+        self.y = self.height / 100 - self.y / 100
+        self.pic = wx.Image(self.filename, wx.BITMAP_TYPE_ANY).ConvertToBitmap()
+        # 通过计算获得图片的存放位置
+        self.button = wx.BitmapButton(self.mainPanel, -1, self.pic, pos=(self.x, self.y))
+        self.mainPanel.Fit()
+
+    def change(self, size):  # 如果检测到框架大小的变化，及时改变图片的位置
+        if self.filename != "":
+            self.start()
+        else:
+            pass
+
+    def ReadChatInfo(self):
+        sql1='select `disease_name`,`recipe` from recipe_disease_info where 1 '
+        disease_recipe = db.do_sql(sql1)
+        recipe_name=[]
+        disease_list=[]
+        for row in disease_recipe:
+            recipe_list=row[1].split(';')
+            num=(len(recipe_list))
+            recipe_name.append(num)
+            disease_list.append(row[0])
+        return disease_list,recipe_name
+
+    def PlotChart(self):
+        name_list,num_list=self.ReadChatInfo()
+
+        import matplotlib.pyplot as plt
+        # 中文问题
+        plt.rcParams['font.sans-serif'] = ['SimHei']  # 中文字体设置-黑体
+        plt.rcParams['axes.unicode_minus'] = False  # 解决保存图像是负号'-'显示为方块的问题
+        # sns.set(font='SimHei')  # 解决Seaborn中文显示问题
+
+        rect = plt.bar(range(len(num_list)), num_list, tick_label=name_list)
+
+        plt.legend((rect,), ("菜谱数",))
+
+        # name_num = 0
+        # for name_num in range(len(name_list)):
+        #     plt.text(name_num - 0.2, -12, name_list[name_num], rotation=25)
+
+        # plt.text(len(plot_data), 100, "医生姓名")#, fontproperties=zhfont1
+        plt.ylabel("菜谱数")#, fontproperties=zhfont1
+
+        plt.title("病症-菜谱柱状图")#, fontproperties=zhfont1
 
         # plt.show() #显示图片
 
-        log='doctor_chat_num'
-        plt.savefig("./%s_base.png" % log)
+        log='disease_recipe'
+        plt.savefig("./img/%s.png" % log,dpi=65,bbox_inches='tight')
         plt.close()
+
 
 class MangeUserPanel(wx.Panel):
     def __init__(self, parent):
